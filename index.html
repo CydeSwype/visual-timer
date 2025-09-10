@@ -22,8 +22,8 @@
             <input type="color" class="config_el" name="bgcolor" value="#cc6633" id="config_bgcolor"/>
         </div>
         <div class="settings-row">
-            <label for="config_points_threshold">Daily points threshold for streak:</label>
-            <input type="number" class="config_el" name="daily_points_threshold" value="100" id="config_points_threshold" min="1" max="1000"/>
+            <label for="config_points_threshold">Daily points needed for streak (minutes of task work):</label>
+            <input type="number" class="config_el" name="daily_points_threshold" value="100" id="config_points_threshold" min="1" max="1000" step="1"/>
         </div>
         <div class="settings-row">
             <label for="config_show_scoring">Show scoring (points & streak):</label>
@@ -35,12 +35,13 @@
         </div>
         <hr/>
         <div class="block">
-            <h3>Gamification</h3>
+            <h3>How scoring works</h3>
             <ul style="margin: 0 0 0 18px; padding: 0 0 0 0.5em;">
             <li>Earn 1 point per minute when task timer is running</li>
             <li>Maintain a streak by earning enough points daily</li>
             <li>Only task list timers earn points (not manual timers)</li>
-            <li>Adjust the daily threshold above to customize difficulty</li>
+            <li>Set the daily target above to customize your streak difficulty</li>
+            <li>Points reset automatically at midnight local time</li>
             </ul>
         </div>
         <hr/>
@@ -86,6 +87,14 @@
         <div id="gamification-panel">
             <div id="points-display">Today: 0 pts</div>
             <div id="streak-display">&#128293; 0 day streak</div>
+        </div>
+        <div id="hover-controls" class="hover-controls">
+            <button id="play-pause-btn" class="control-btn" title="Play/Pause (Space)">
+                ▶️
+            </button>
+            <button id="reset-btn" class="control-btn" title="Reset (R)">
+                🔄
+            </button>
         </div>
         <button id="tasklist-button" class="icon-btn" title="Task List">
             📝

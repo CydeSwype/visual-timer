@@ -13,14 +13,31 @@ h3 {
     padding: 0px 10px;
 }
 
-#input-minutes,
-#paused-message {
+#input-minutes {
     display: none;
     text-align: center;
     background: #000;
     color: #fff;
     opacity: 0.8;
     font-size: min(25vw, 25vh);
+    z-index: 2;
+}
+
+#paused-message {
+    display: none;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: min(20vw, 20vh);
+    z-index: 2;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #fill {
@@ -214,7 +231,7 @@ svg {
 .settings-card {
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  /* box-shadow: 0 2px 12px rgba(0,0,0,0.08); */
   padding: 0px 18px;
   max-width: 380px;
   min-width: 240px;
@@ -306,4 +323,42 @@ svg {
 .settings-row input[type='file']:focus {
   border: 1.5px solid #5a6;
   outline: none;
+}
+
+/* Hover controls */
+.hover-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+#timer:hover .hover-controls,
+#timer.paused .hover-controls {
+  opacity: 1;
+}
+
+.control-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }

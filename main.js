@@ -29,6 +29,42 @@ function get_today_date_string() {
   return today.toISOString().split('T')[0];
 }
 
+// For testing purposes - allows simulating different dates
+function get_test_date_string(date) {
+  if (date) {
+    return date.toISOString().split('T')[0];
+  }
+  return get_today_date_string();
+}
+
+// Test function to verify midnight reset logic
+function test_midnight_reset() {
+  console.log('=== Testing Midnight Reset Logic ===');
+  
+  // Save current state
+  const original_points = points_today;
+  const original_last_award_time = points_last_award_time;
+  
+  // Simulate having points from yesterday
+  points_today = 50;
+  points_last_award_time = new Date(Date.now() - 24 * 60 * 60 * 1000).getTime(); // Yesterday
+  
+  console.log('Before reset - points_today:', points_today);
+  console.log('Before reset - last_award_time:', new Date(points_last_award_time));
+  
+  // Call award_point which should detect date change and reset
+  award_point();
+  
+  console.log('After reset - points_today:', points_today);
+  console.log('After reset - last_award_time:', new Date(points_last_award_time));
+  
+  // Restore original state
+  points_today = original_points;
+  points_last_award_time = original_last_award_time;
+  
+  console.log('=== Test Complete ===');
+}
+
 function save_gamification_data() {
   const today = get_today_date_string();
   let data = JSON.parse(localStorage.getItem('gamification_data') || '{}');
@@ -41,9 +77,44 @@ function save_gamification_data() {
 function restore_gamification_data() {
   const today = get_today_date_string();
   let data = JSON.parse(localStorage.getItem('gamification_data') || '{}');
-  points_today = (data.daily_points && data.daily_points[today]) ? data.daily_points[today] : 0;
+  // If the last stored date is not today, reset points_today
+  if (!data.daily_points) data.daily_points = {};
+  if (!data.daily_points[today]) {
+    points_today = 0;
+    data.daily_points[today] = 0;
+    localStorage.setItem('gamification_data', JSON.stringify(data));
+  } else {
+    points_today = data.daily_points[today];
+  }
   daily_points_threshold = data.daily_points_threshold || 100;
   update_gamification_panel();
+  schedule_midnight_points_reset();
+}
+
+// Schedule a timer to reset points_today at the next local midnight
+function schedule_midnight_points_reset() {
+  if (window._midnight_points_reset_timeout) {
+    clearTimeout(window._midnight_points_reset_timeout);
+  }
+  const now = new Date();
+  const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const msUntilMidnight = nextMidnight - now;
+  
+  console.log(`Scheduling midnight reset in ${Math.round(msUntilMidnight / 1000 / 60)} minutes`);
+  
+  window._midnight_points_reset_timeout = setTimeout(() => {
+    console.log('Midnight reached - resetting points for new day');
+    reset_points_for_new_day();
+    schedule_midnight_points_reset(); // Schedule again for the next day
+  }, msUntilMidnight + 1000); // Add 1s buffer
+}
+
+function reset_points_for_new_day() {
+  console.log(`Resetting points for new day. Previous points: ${points_today}`);
+  points_today = 0;
+  save_gamification_data();
+  update_gamification_panel();
+  console.log('Points reset complete');
 }
 
 function calculate_streak() {
@@ -51,6 +122,11 @@ function calculate_streak() {
   let daily_points = data.daily_points || {};
   let streak = 0;
   let d = new Date();
+  let today_str = d.toISOString().split('T')[0];
+  // If today hasn't reached the threshold, start from yesterday
+  if ((daily_points[today_str] || 0) < daily_points_threshold) {
+    d.setDate(d.getDate() - 1);
+  }
   for (let i = 0; i < 365; i++) {
     let ds = d.toISOString().split('T')[0];
     if ((daily_points[ds] || 0) >= daily_points_threshold) {
@@ -84,6 +160,18 @@ function update_gamification_panel() {
 
 function award_point() {
   console.log('award_point called', {is_task_timer_running, timer_paused, timer_is_complete});
+  
+  // Check if the date has changed since we last awarded a point
+  const current_date = get_today_date_string();
+  if (points_last_award_time) {
+    const last_award_date = new Date(points_last_award_time).toISOString().split('T')[0];
+    if (current_date !== last_award_date) {
+      // Date has changed, reset points for new day
+      console.log(`Date changed from ${last_award_date} to ${current_date}, resetting points`);
+      reset_points_for_new_day();
+    }
+  }
+  
   if (is_task_timer_running && !timer_paused && timer_is_complete === 0) {
     points_today++;
     save_gamification_data();
@@ -97,6 +185,18 @@ function award_point() {
 function start_points_tracking() {
   if (points_interval || points_timeout) return; // Only start if not already running
   console.log('start_points_tracking called');
+  
+  // Check if the date has changed since we last tracked points
+  const current_date = get_today_date_string();
+  if (points_last_award_time) {
+    const last_award_date = new Date(points_last_award_time).toISOString().split('T')[0];
+    if (current_date !== last_award_date) {
+      // Date has changed, reset points for new day
+      console.log(`Date changed from ${last_award_date} to ${current_date}, resetting points in start_points_tracking`);
+      reset_points_for_new_day();
+    }
+  }
+  
   // If resuming, use the remaining ms, otherwise start fresh
   if (points_award_remaining_ms < 60000) {
     points_timeout = setTimeout(function() {
@@ -261,8 +361,11 @@ function set_timer(minutes, description) {
   current_timer = start_timer_seconds;
   overtime_seconds = 0;
 
-  // save this new timer length as the default for next launch
-  save_config();
+  // Only save config if this is not a task timer (i.e., it's a manual timer)
+  // For task timers, we don't want to overwrite the default timer length
+  if (!description) {
+    save_config();
+  }
 
   // if timer/task description is set, then config the display and start points tracking
   if (description) {
@@ -316,7 +419,7 @@ function open_config() {
   save_current_window_size();
 
   // resize the window
-  var width = 360;
+  var width = 400;
   var height = 600;
   window.resizeTo(width, height);
 
@@ -387,12 +490,42 @@ function catch_onkeydown(e) {
     if (task_is_showing) {
       close_task();
     }
+    // Exit timer input mode if currently entering minutes
+    if (input_minutes !== "") {
+      input_minutes = "";
+      document.querySelector("#input-minutes").style.display = "none";
+      // Restart timer since we paused it when entering input mode
+      if (!timer_paused && timer_is_complete === 0) {
+        start_timer();
+      }
+    }
+  }
+  
+  // Handle backspace for timer input
+  if (e.key == "Backspace" && input_minutes !== "") {
+    input_minutes = input_minutes.slice(0, -1);
+    if (input_minutes === "") {
+      // If backspace removes the last character, exit timer input mode
+      document.querySelector("#input-minutes").style.display = "none";
+      // Restart timer since we paused it when entering input mode
+      if (!timer_paused && timer_is_complete === 0) {
+        start_timer();
+      }
+    } else {
+      // Update the display with remaining characters
+      show_input_minutes();
+    }
   }
 }
 
 function catch_keypress(e) {
   // while task list is showing, ignore (most) key catching
   if (task_is_showing) {
+    return true;
+  }
+
+  // while config is showing, ignore keyboard shortcuts to allow normal form input
+  if (config_is_showing) {
     return true;
   }
 
@@ -508,6 +641,20 @@ function update_timer(seconds) {
   document.title = format_time(seconds);
   update_fill();
   update_gamification_panel();
+  update_control_buttons();
+}
+
+function update_control_buttons() {
+  const playPauseBtn = document.getElementById("play-pause-btn");
+  if (playPauseBtn) {
+    if (timer_paused) {
+      playPauseBtn.innerHTML = "▶️";
+      playPauseBtn.title = "Resume (Space)";
+    } else {
+      playPauseBtn.innerHTML = "⏸️";
+      playPauseBtn.title = "Pause (Space)";
+    }
+  }
 }
 
 function countdown() {
@@ -529,6 +676,8 @@ function start_timer() {
   }, 1000);
   document.querySelector("#paused-message").style.display = "none";
   timer_paused = false;
+  document.querySelector("#timer").classList.remove("paused");
+  update_control_buttons();
   // Always resume points tracking if this is a task timer and timer is not complete
   if (is_task_timer_running && timer_is_complete === 0) start_points_tracking();
 }
@@ -537,6 +686,8 @@ function pause_timer() {
   clearInterval(interval);
   document.querySelector("#paused-message").style.display = "flex";
   timer_paused = true;
+  document.querySelector("#timer").classList.add("paused");
+  update_control_buttons();
   stop_points_tracking();
   // if the timer has completed and user pauses it, assume they want to reset it as well
   if (timer_is_complete == 1) {
@@ -599,11 +750,21 @@ function restore_config() {
       change_bgcolor(config["bgcolor"]);
 
       // restore default timer length (in minutes)
-      set_timer(config["default_timer_length"]);
+      if (config["default_timer_length"]) {
+        set_timer(config["default_timer_length"]);
+      }
+
+      // restore daily points threshold
+      if (config["daily_points_threshold"]) {
+        daily_points_threshold = config["daily_points_threshold"];
+        if (document.getElementById("config_points_threshold")) {
+          document.getElementById("config_points_threshold").value = daily_points_threshold;
+        }
+      }
 
       // restore show_scoring
       if (typeof config["show_scoring"] === 'undefined') {
-        show_scoring = true;
+        show_scoring = false;
       } else {
         show_scoring = config["show_scoring"];
       }
@@ -613,10 +774,10 @@ function restore_config() {
       update_gamification_panel();
     }
   } else {
-    // Default: show scoring ON
-    show_scoring = true;
+    // Default: show scoring OFF (opt-in)
+    show_scoring = false;
     if (document.getElementById("config_show_scoring")) {
-      document.getElementById("config_show_scoring").checked = true;
+      document.getElementById("config_show_scoring").checked = false;
     }
     update_gamification_panel();
   }
@@ -626,6 +787,7 @@ function save_config() {
   // cycle through form elements and save the values to localstorage
   var config_data = {};
   config_data["default_timer_length"] = start_timer_seconds / 60; // current_timer is in seconds, need to convert to mins
+  
   document.querySelectorAll(".config_el").forEach(function (o) {
     if (o.type == "checkbox") {
       config_data[o.name] = o.checked;
@@ -635,6 +797,11 @@ function save_config() {
       // Don't include file input in config data
     } else {
       config_data[o.name] = o.value;
+      // Handle specific fields
+      if (o.name === "daily_points_threshold") {
+        config_data[o.name] = parseInt(o.value);
+        daily_points_threshold = parseInt(o.value);
+      }
     }
   });
 
@@ -841,6 +1008,45 @@ function init() {
     change_bgcolor(this);
   });
 
+  // Add validation for daily points threshold input
+  document.querySelector("#config_points_threshold").addEventListener("blur", function() {
+    var value = parseInt(this.value);
+    var min = parseInt(this.min);
+    var max = parseInt(this.max);
+    
+    // Store the previous valid value
+    var previousValue = daily_points_threshold || 100;
+    
+    // Validate the input
+    if (isNaN(value) || value < min || value > max) {
+      // Reset to previous valid value
+      this.value = previousValue;
+      daily_points_threshold = previousValue;
+    } else {
+      // Update the threshold with the new valid value
+      daily_points_threshold = value;
+    }
+  });
+
+  // Add input validation for immediate feedback
+  document.querySelector("#config_points_threshold").addEventListener("input", function() {
+    var value = parseInt(this.value);
+    var min = parseInt(this.min);
+    var max = parseInt(this.max);
+    
+    // If the input is empty, allow it (user might be typing)
+    if (this.value === "") {
+      return;
+    }
+    
+    // If the value is invalid, show visual feedback
+    if (isNaN(value) || value < min || value > max) {
+      this.style.borderColor = "#ff0000";
+    } else {
+      this.style.borderColor = "";
+    }
+  });
+
   document
     .querySelector("#save_config_button")
     .addEventListener("click", () => {
@@ -867,6 +1073,23 @@ function init() {
       } else {
         open_task();
       }
+    });
+
+  // Add hover control button events
+  document
+    .querySelector("#play-pause-btn")
+    .addEventListener("click", () => {
+      if (timer_paused) {
+        start_timer();
+      } else {
+        pause_timer();
+      }
+    });
+
+  document
+    .querySelector("#reset-btn")
+    .addEventListener("click", () => {
+      reset_and_restart_timer();
     });
 
   //hookup_task_buttons()
