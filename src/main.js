@@ -23,6 +23,7 @@ var points_award_remaining_ms = 60000;
 var points_last_award_time = null;
 var is_task_timer_running = false;
 var show_scoring = true;
+var show_hover_controls = false;
 
 function get_today_date_string() {
   const today = new Date();
@@ -155,6 +156,17 @@ function update_gamification_panel() {
   }
   if (streak_display) {
     streak_display.innerText = `🔥 ${calculate_streak()} day streak`;
+  }
+}
+
+function update_hover_controls() {
+  const hover_controls = document.getElementById('hover-controls');
+  if (hover_controls) {
+    if (show_hover_controls) {
+      hover_controls.classList.add('enabled');
+    } else {
+      hover_controls.classList.remove('enabled');
+    }
   }
 }
 
@@ -642,6 +654,7 @@ function update_timer(seconds) {
   update_fill();
   update_gamification_panel();
   update_control_buttons();
+  update_hover_controls();
 }
 
 function update_control_buttons() {
@@ -772,6 +785,17 @@ function restore_config() {
         document.getElementById("config_show_scoring").checked = show_scoring;
       }
       update_gamification_panel();
+
+      // restore show_hover_controls
+      if (typeof config["show_hover_controls"] === 'undefined') {
+        show_hover_controls = false;
+      } else {
+        show_hover_controls = config["show_hover_controls"];
+      }
+      if (document.getElementById("config_show_hover_controls")) {
+        document.getElementById("config_show_hover_controls").checked = show_hover_controls;
+      }
+      update_hover_controls();
     }
   } else {
     // Default: show scoring OFF (opt-in)
@@ -780,6 +804,13 @@ function restore_config() {
       document.getElementById("config_show_scoring").checked = false;
     }
     update_gamification_panel();
+
+    // Default: show hover controls OFF (opt-in)
+    show_hover_controls = false;
+    if (document.getElementById("config_show_hover_controls")) {
+      document.getElementById("config_show_hover_controls").checked = false;
+    }
+    update_hover_controls();
   }
 }
 
@@ -791,7 +822,11 @@ function save_config() {
   document.querySelectorAll(".config_el").forEach(function (o) {
     if (o.type == "checkbox") {
       config_data[o.name] = o.checked;
-      if (o.name === "show_scoring") show_scoring = o.checked;
+      if (o.name === "show_scoring") {
+        show_scoring = o.checked;
+      } else if (o.name === "show_hover_controls") {
+        show_hover_controls = o.checked;
+      }
     } else if (o.type == "file") {
       // File input handled separately via handle_custom_audio function
       // Don't include file input in config data
@@ -818,6 +853,9 @@ function save_config() {
 
   // immediately update scoring panel visibility
   update_gamification_panel();
+
+  // immediately update hover controls visibility
+  update_hover_controls();
 }
 
 function populate_task_summary(task_data) {
@@ -1119,6 +1157,7 @@ window.onload = function () {
   init();
   start_timer();
   hookup_task_input();
+  update_hover_controls(); // Initialize hover controls visibility
 
   // Responsive font size for timer description
   window.addEventListener('resize', () => fitTextToContainer("timer-description"));

@@ -2,6 +2,8 @@
 
 A keyboard-first productivity timer with task management and gamification features.
 
+Available as both a **browser extension** and a **desktop application** (Electron).
+
 ## Features
 
 ### Core Timer Functionality
@@ -61,3 +63,84 @@ The gamification system encourages consistent use of the task list mode, helping
 
 # demo
 http://www.yawmp.com/timer/
+
+## Building and Running
+
+This project supports both browser extension and desktop app builds from a single codebase.
+
+### Project Structure
+
+```
+keytimer/
+├── src/              # Shared source code (HTML, CSS, JS, assets)
+├── extension/        # Browser extension specific files
+├── desktop/          # Electron desktop app files
+└── scripts/          # Build scripts
+```
+
+### Browser Extension
+
+#### Development
+
+1. Package the extension:
+```bash
+npm run package:extension
+```
+
+2. Load in Chrome:
+   - Open `chrome://extensions/`
+   - Enable "Developer mode"
+   - Click "Load unpacked"
+   - Select the `dist/extension` directory
+
+#### Files Included
+- `manifest.json` - Extension manifest
+- `background.js` - Service worker for extension
+- All shared files from `src/`
+
+### Desktop Application (Electron)
+
+#### Prerequisites
+
+Install dependencies:
+```bash
+npm install
+```
+
+#### Development
+
+Run the desktop app in development mode:
+```bash
+npm start
+# or
+npm run dev:desktop
+```
+
+#### Building for Production
+
+Build for your current platform:
+```bash
+npm run build:desktop
+```
+
+Build for specific platforms:
+```bash
+npm run build:desktop:mac      # macOS (DMG, ZIP)
+npm run build:desktop:win      # Windows (NSIS installer, ZIP)
+npm run build:desktop:linux    # Linux (AppImage, DEB)
+```
+
+Built applications will be in the `dist/` directory.
+
+### Shared Code
+
+The core application logic in `src/` is shared between both platforms:
+- `index.html` - Main UI
+- `main.js` - Timer logic and functionality
+- `styles.css` - Styling
+- `assets/` - Icons and images
+- `ding.mp3` - Default notification sound
+
+The only platform-specific code is:
+- **Extension**: `extension/background.js` (Chrome extension service worker)
+- **Desktop**: `desktop/main.js` (Electron main process)

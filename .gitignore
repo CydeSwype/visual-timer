@@ -1,2 +1,15 @@
-Archive.zip
+node_modules/
+dist/
+*.log
 .DS_Store
+*.zip
+*.dmg
+*.AppImage
+*.deb
+*.exe
+*.snap
+*.tar.gz
+
+# Temporary/development files
+desktop/assets/icon-temp.png
+desktop/assets/icon-content.png

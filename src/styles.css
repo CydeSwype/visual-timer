@@ -331,15 +331,20 @@ svg {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  display: flex;
   gap: 10px;
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: 10;
+  display: none; /* Hidden by default - opt-in via settings */
 }
 
-#timer:hover .hover-controls,
-#timer.paused .hover-controls {
+/* Only show hover controls when enabled in settings */
+.hover-controls.enabled {
+  display: flex;
+}
+
+#timer:hover .hover-controls.enabled,
+#timer.paused .hover-controls.enabled {
   opacity: 1;
 }
 

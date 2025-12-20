@@ -1,0 +1,63 @@
+{
+  "name": "keytimer",
+  "version": "1.4.0",
+  "description": "A keyboard-first productivity timer with task management and gamification features",
+  "main": "desktop/main.js",
+  "scripts": {
+    "start": "electron desktop/main.js",
+    "build:desktop": "electron-builder",
+    "build:desktop:mac": "electron-builder --mac",
+    "build:desktop:win": "electron-builder --win",
+    "build:desktop:linux": "electron-builder --linux",
+    "dev:desktop": "electron desktop/main.js",
+    "package:extension": "node scripts/package-extension.js"
+  },
+  "keywords": [
+    "timer",
+    "pomodoro",
+    "productivity",
+    "task-management"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "jimp": "^1.6.0"
+  },
+  "build": {
+    "appId": "com.keytimer.app",
+    "productName": "Visual Timer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "desktop/**/*",
+      "!desktop/**/*.map"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "desktop/assets/icon-1024.png",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "desktop/assets/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "icon": "desktop/assets/icon.png"
+    }
+  }
+}
