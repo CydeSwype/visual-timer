@@ -31,9 +31,6 @@
     "directories": {
       "output": "dist"
     },
-    "publish": {
-      "provider": null
-    },
     "files": [
       "src/**/*",
       "desktop/**/*",
