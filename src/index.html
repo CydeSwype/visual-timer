@@ -33,14 +33,18 @@
             <label for="config_show_hover_controls">Show hover controls (play/pause & reset buttons):</label>
             <input type="checkbox" class="checkbox config_el" name="show_hover_controls" id="config_show_hover_controls"/>
         </div>
-        <div class="settings-row" style="justify-content:center; margin-top:18px;">
+        <div class="settings-row" id="always-on-top-row" style="display: none;">
+            <label for="config_always_on_top">Always on top (desktop app only):</label>
+            <input type="checkbox" class="checkbox config_el" name="always_on_top" id="config_always_on_top"/>
+        </div>
+        <div class="settings-row save-button-row">
             <input type="button" class="button save-btn" value="Save Settings" id="save_config_button"/>
         </div>
         </div>
         <hr/>
-        <div class="block">
+        <div class="block info-block">
             <h3>How scoring works</h3>
-            <ul style="margin: 0 0 0 18px; padding: 0 0 0 0.5em;">
+            <ul class="info-list">
             <li>Earn 1 point per minute when task timer is running</li>
             <li>Maintain a streak by earning enough points daily</li>
             <li>Only task list timers earn points (not manual timers)</li>
@@ -49,35 +53,62 @@
             </ul>
         </div>
         <hr/>
-        <div class="block">
+        <div class="block keyboard-shortcuts-block">
             <h3>Keyboard Shortcuts</h3>
-            <div style="margin: 0 0 0 12px;">
-                <div><b>Space</b> or <b>P</b> : Pause/Resume</div>
-                <div><b>1-999</b> : Set timer for [1-999] mins (Enter to start)</div>
-                <div><b>R</b> : Restart timer</div>
-                <div><b>T</b> : Task view</div>
-                <div><b>?</b> : Toggle settings panel</div>
-                <div><b>&gt;</b> : Mark current task complete and begin next task</div>
+            <div class="shortcuts-list">
+                <div class="shortcut-item">
+                    <span class="shortcut-key">Space</span> or <span class="shortcut-key">P</span>
+                    <span class="shortcut-desc">Pause/Resume</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">1-999</span>
+                    <span class="shortcut-desc">Set timer for [1-999] mins (Enter to start)</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">R</span>
+                    <span class="shortcut-desc">Restart timer</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">T</span>
+                    <span class="shortcut-desc">Task view</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">?</span>
+                    <span class="shortcut-desc">Toggle settings panel</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">&gt;</span>
+                    <span class="shortcut-desc">Mark current task complete and begin next task</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">Esc</span>
+                    <span class="shortcut-desc">Close any open panels</span>
+                </div>
             </div>
         </div>
     </div>
     <div id="task-list">
-        <h3 style="margin-top:10px">Task List (<a href="#" id="close_task_list_button">close</a>)</h3>
-        <div class="task template">
-            <div class="name"></div>
-            <div class="start button">start</div>
-            <div class="remove button">remove</div>
-        </div>
-        <div>
-            <form id="new_task_form">
-            <input type="text" name="new_task" id="new_task_input" value="" placeholder="mins - task (i.e. 20 - draft blog post)" style="width:80%"/>
-            <input type="button" id="new_task_submit" value="add"/>
-            </form>
-        </div>
-        <div id="tasks"></div>
-        <div id="task-summary">
-            <div class="sum"></div>
-            <div id="toast">You have reached the end of the task list</div>
+        <div class="task-list-container">
+            <div class="task-list-header">
+                <h3>Task List</h3>
+                <a href="#" id="close_task_list_button" class="close-link">close</a>
+            </div>
+            <div class="task template">
+                <div class="name"></div>
+                <div class="start button">start</div>
+                <div class="remove button">remove</div>
+            </div>
+            <div class="task-form-container">
+                <form id="new_task_form">
+                <input type="text" name="new_task" id="new_task_input" value="" placeholder="mins - task (i.e. 20 - draft blog post)" class="task-input"/>
+                <input type="button" id="new_task_submit" value="add" class="add-btn"/>
+                </form>
+            </div>
+            <div id="tasks"></div>
+            <div id="task-summary">
+                <div class="sum"></div>
+                <div id="toast">You have reached the end of the task list</div>
+            </div>
         </div>
     </div>
     <div id="timer">

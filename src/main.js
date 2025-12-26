@@ -430,9 +430,9 @@ function open_config() {
   // store the window size and location so we can restore it after the user is done with the config view
   save_current_window_size();
 
-  // resize the window
-  var width = 400;
-  var height = 600;
+  // resize the window to fit all content
+  var width = 430;
+  var height = 700;
   window.resizeTo(width, height);
 
   // show the config div
@@ -466,9 +466,9 @@ function open_task() {
   // store the window size and location so we can restore it after the user is done with the config view
   save_current_window_size();
 
-  // resize the window
-  var width = 420;
-  var height = 400;
+  // resize the window to fit all content
+  var width = 500;
+  var height = 600;
   window.resizeTo(width, height);
 
   // show the config div
@@ -796,6 +796,23 @@ function restore_config() {
         document.getElementById("config_show_hover_controls").checked = show_hover_controls;
       }
       update_hover_controls();
+      
+      // restore always_on_top (desktop app only)
+      if (window.electronAPI && window.electronAPI.isElectron) {
+        window.electronAPI.getAlwaysOnTop().then((isAlwaysOnTop) => {
+          if (document.getElementById("config_always_on_top")) {
+            document.getElementById("config_always_on_top").checked = isAlwaysOnTop;
+          }
+        }).catch(() => {
+          // Fallback to localStorage if Electron API fails
+          if (typeof config["always_on_top"] !== 'undefined' && document.getElementById("config_always_on_top")) {
+            document.getElementById("config_always_on_top").checked = config["always_on_top"];
+            if (window.electronAPI) {
+              window.electronAPI.setAlwaysOnTop(config["always_on_top"]);
+            }
+          }
+        });
+      }
     }
   } else {
     // Default: show scoring OFF (opt-in)
@@ -856,6 +873,14 @@ function save_config() {
 
   // immediately update hover controls visibility
   update_hover_controls();
+  
+  // immediately update always on top (desktop app only)
+  if (window.electronAPI && window.electronAPI.isElectron) {
+    const alwaysOnTopCheckbox = document.getElementById("config_always_on_top");
+    if (alwaysOnTopCheckbox) {
+      window.electronAPI.setAlwaysOnTop(alwaysOnTopCheckbox.checked);
+    }
+  }
 }
 
 function populate_task_summary(task_data) {
@@ -1090,6 +1115,16 @@ function init() {
     .addEventListener("click", () => {
       close_config();
     });
+  
+  // Apply always on top immediately when checkbox is toggled (desktop app only)
+  if (window.electronAPI && window.electronAPI.isElectron) {
+    const alwaysOnTopCheckbox = document.getElementById("config_always_on_top");
+    if (alwaysOnTopCheckbox) {
+      alwaysOnTopCheckbox.addEventListener("change", (e) => {
+        window.electronAPI.setAlwaysOnTop(e.target.checked);
+      });
+    }
+  }
 
   // Add settings button click event
   document
@@ -1151,6 +1186,14 @@ window.onload = function () {
     catch_onkeydown(e);
   }; // needed for Escape key handling
 
+  // Show always on top setting only in Electron (desktop app)
+  if (window.electronAPI && window.electronAPI.isElectron) {
+    const alwaysOnTopRow = document.getElementById('always-on-top-row');
+    if (alwaysOnTopRow) {
+      alwaysOnTopRow.style.display = 'flex';
+    }
+  }
+  
   restore_config();
   restore_tasks();
   restore_gamification_data();
@@ -1161,4 +1204,54 @@ window.onload = function () {
 
   // Responsive font size for timer description
   window.addEventListener('resize', () => fitTextToContainer("timer-description"));
+  
+  // Save window state to localStorage (for extension persistence)
+  function saveWindowStateToStorage() {
+    try {
+      const state = {
+        width: window.outerWidth,
+        height: window.outerHeight,
+        left: window.screenX || window.screenLeft,
+        top: window.screenY || window.screenTop
+      };
+      localStorage.setItem('windowState', JSON.stringify(state));
+    } catch (e) {
+      // Ignore errors (e.g., in contexts where localStorage isn't available)
+    }
+  }
+  
+  // Load and apply saved window state (only in extension context)
+  function loadWindowStateFromStorage() {
+    try {
+      const saved = localStorage.getItem('windowState');
+      if (saved) {
+        const state = JSON.parse(saved);
+        // Only apply if we're in a popup window (extension context)
+        // Don't try to resize in desktop app
+        if (window.chrome && window.chrome.runtime && window.chrome.runtime.id) {
+          // We're in extension context - send message to background script to restore position
+          // The window itself can't resize/move, but the background script can
+          window.chrome.runtime.sendMessage({
+            action: 'restoreWindowState',
+            state: state
+          });
+        }
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+  }
+  
+  // Save window state on move/resize (debounced)
+  let saveStateTimeout;
+  function debouncedSaveWindowState() {
+    clearTimeout(saveStateTimeout);
+    saveStateTimeout = setTimeout(saveWindowStateToStorage, 500);
+  }
+  
+  window.addEventListener('resize', debouncedSaveWindowState);
+  window.addEventListener('move', debouncedSaveWindowState);
+  
+  // Load state on page load
+  loadWindowStateFromStorage();
 };

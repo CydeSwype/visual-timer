@@ -63,6 +63,37 @@ function saveWindowState() {
   }
 }
 
+// Load always on top setting from config
+function getAlwaysOnTopSetting() {
+  const configPath = path.join(app.getPath('userData'), 'config.json');
+  try {
+    if (fs.existsSync(configPath)) {
+      const data = fs.readFileSync(configPath, 'utf8');
+      const config = JSON.parse(data);
+      return config.alwaysOnTop === true;
+    }
+  } catch (error) {
+    console.error('Error loading always on top setting:', error);
+  }
+  return false; // Default to false
+}
+
+// Save always on top setting to config
+function saveAlwaysOnTopSetting(value) {
+  const configPath = path.join(app.getPath('userData'), 'config.json');
+  try {
+    let config = {};
+    if (fs.existsSync(configPath)) {
+      const data = fs.readFileSync(configPath, 'utf8');
+      config = JSON.parse(data);
+    }
+    config.alwaysOnTop = value;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  } catch (error) {
+    console.error('Error saving always on top setting:', error);
+  }
+}
+
 function createWindow() {
   // Determine icon path based on platform
   let iconPath;
@@ -78,6 +109,9 @@ function createWindow() {
 
   // Load saved window state
   const windowState = loadWindowState();
+  
+  // Load always on top setting
+  const alwaysOnTop = getAlwaysOnTopSetting();
 
   // Create the browser window with saved state
   mainWindow = new BrowserWindow({
@@ -88,6 +122,7 @@ function createWindow() {
     minWidth: 200,
     minHeight: 100,
     frame: true,
+    alwaysOnTop: alwaysOnTop,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -160,6 +195,23 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
+});
+
+// IPC handlers for always on top
+ipcMain.handle('set-always-on-top', (event, flag) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setAlwaysOnTop(flag);
+    saveAlwaysOnTopSetting(flag);
+    return true;
+  }
+  return false;
+});
+
+ipcMain.handle('get-always-on-top', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    return mainWindow.isAlwaysOnTop();
+  }
+  return getAlwaysOnTopSetting();
 });
 
 // Save window state before app quits
