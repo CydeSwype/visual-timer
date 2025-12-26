@@ -15,6 +15,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
         include:
@@ -45,8 +46,8 @@ jobs:
 
       - name: Install dependencies (Windows)
         if: matrix.os == 'windows-latest'
-        run: npm install --no-audit --no-fund
-        timeout-minutes: 20
+        run: npm ci --no-audit --no-fund
+        timeout-minutes: 30
         shell: pwsh
 
       - name: Build for ${{ matrix.platform }} (macOS/Linux)
@@ -73,13 +74,23 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           CI: false
 
-      - name: Upload artifacts
+      - name: Upload artifacts (macOS/Linux)
+        if: matrix.os != 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}-build
           path: dist/
           retention-days: 30
           if-no-files-found: error
+
+      - name: Upload artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}-build
+          path: dist/
+          retention-days: 30
+          if-no-files-found: warn
 
   release:
     needs: build
@@ -142,4 +153,3 @@ jobs:
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
