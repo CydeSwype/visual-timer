@@ -43,6 +43,9 @@ jobs:
 
       - name: Build for ${{ matrix.platform }}
         run: npm run build:desktop:${{ matrix.platform }}
+        env:
+          # Disable electron-builder auto-publish
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -79,16 +82,29 @@ jobs:
             -name "*.deb" -o \
             -name "*.blockmap" \
           \) -not -path "*/node_modules/*" -exec cp {} release-assets/ \;
-          ls -lh release-assets/
+          echo "Found release assets:"
+          ls -lh release-assets/ || echo "Warning: No release assets found!"
+          if [ ! "$(ls -A release-assets)" ]; then
+            echo "Error: No release assets to upload!"
+            exit 1
+          fi
 
       - name: Get tag name
         id: tag
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+            TAG="${{ github.event.inputs.tag }}"
           else
-            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            TAG="${GITHUB_REF#refs/tags/}"
           fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Tag to use: ${TAG}"
+
+      - name: Check release assets
+        run: |
+          echo "Release assets to upload:"
+          ls -lh release-assets/ || echo "No release-assets directory found"
+          find release-assets -type f || echo "No files found in release-assets"
 
       - name: Update or Create Release
         uses: softprops/action-gh-release@v1
@@ -97,6 +113,7 @@ jobs:
           files: release-assets/*
           draft: false
           prerelease: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
