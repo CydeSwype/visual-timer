@@ -42,10 +42,15 @@ jobs:
         run: npm ci
 
       - name: Build for ${{ matrix.platform }}
-        run: npm run build:desktop:${{ matrix.platform }}
+        run: |
+          # Unset GitHub tokens to prevent electron-builder from auto-publishing
+          unset GH_TOKEN
+          unset GITHUB_TOKEN
+          npm run build:desktop:${{ matrix.platform }}
         env:
-          # Disable electron-builder auto-publish
+          # Disable electron-builder auto-publish and code signing
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          CI: false
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
