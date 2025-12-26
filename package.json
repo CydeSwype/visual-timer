@@ -40,9 +40,17 @@
       "category": "public.app-category.productivity",
       "icon": "desktop/assets/icon-1024.png",
       "target": [
-        "dmg",
-        "zip"
-      ]
+        {
+          "target": "zip",
+          "arch": ["arm64"]
+        },
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        }
+      ],
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "win": {
       "target": [

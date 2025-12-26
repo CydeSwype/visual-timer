@@ -42,6 +42,7 @@ jobs:
         run: npm ci
 
       - name: Build for ${{ matrix.platform }}
+        timeout-minutes: 30
         run: |
           # Unset GitHub tokens to prevent electron-builder from auto-publishing
           unset GH_TOKEN
@@ -51,6 +52,8 @@ jobs:
           # Disable electron-builder auto-publish and code signing
           CSC_IDENTITY_AUTO_DISCOVERY: false
           CI: false
+          # Increase timeout for DMG creation
+          ELECTRON_BUILDER_CACHE: /tmp/electron-builder-cache
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
