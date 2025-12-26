@@ -40,6 +40,7 @@
       "category": "public.app-category.productivity",
       "icon": "desktop/assets/icon-1024.png",
       "target": [
+        "dmg",
         "zip"
       ],
       "hardenedRuntime": false,
