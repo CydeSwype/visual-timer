@@ -143,6 +143,25 @@ jobs:
           ls -lh release-assets/ || echo "No release-assets directory found"
           find release-assets -type f || echo "No files found in release-assets"
 
+      - name: Delete existing release assets
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          # Get release ID
+          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases/tags/${TAG} --jq '.id' 2>/dev/null || echo "")
+          if [ -n "$RELEASE_ID" ]; then
+            echo "Found existing release, deleting old assets..."
+            # Get all asset IDs and delete them
+            gh api repos/${{ github.repository }}/releases/${RELEASE_ID}/assets --jq '.[].id' | while read asset_id; do
+              if [ -n "$asset_id" ]; then
+                echo "Deleting asset ID: $asset_id"
+                gh api -X DELETE repos/${{ github.repository }}/releases/assets/$asset_id || true
+              fi
+            done
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
       - name: Update or Create Release
         uses: softprops/action-gh-release@v1
         with:
