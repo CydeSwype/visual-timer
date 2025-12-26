@@ -51,7 +51,7 @@
         "nsis",
         "zip"
       ],
-      "icon": "desktop/assets/icon.ico"
+      "icon": "desktop/assets/icon-1024.png"
     },
     "linux": {
       "target": [
