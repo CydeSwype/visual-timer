@@ -18,7 +18,10 @@
     "productivity",
     "task-management"
   ],
-  "author": "",
+  "author": {
+    "name": "Visual Timer",
+    "email": "visualtimer@example.com"
+  },
   "license": "ISC",
   "devDependencies": {
     "electron": "^28.0.0",
@@ -59,7 +62,8 @@
         "deb"
       ],
       "category": "Utility",
-      "icon": "desktop/assets/icon.png"
+      "icon": "desktop/assets/icon.png",
+      "maintainer": "visualtimer@example.com"
     }
   }
 }
