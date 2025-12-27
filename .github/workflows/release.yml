@@ -50,18 +50,37 @@ jobs:
         timeout-minutes: 30
         shell: pwsh
 
-      - name: Build for ${{ matrix.platform }} (macOS/Linux)
-        if: matrix.os != 'windows-latest'
+
+      - name: Build for mac (macOS, signed + notarized)
+        if: matrix.platform == 'mac'
+        timeout-minutes: 45
+        run: |
+          # Unset GitHub tokens to prevent electron-builder from auto-publishing
+          unset GH_TOKEN
+          unset GITHUB_TOKEN
+          npm run build:desktop:mac
+        env:
+          # Enable signing/notarization for mac builds
+          CI: true
+          CSC_IDENTITY_AUTO_DISCOVERY: true
+          CSC_LINK: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERT_P12_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+
+      - name: Build for linux (Linux)
+        if: matrix.platform == 'linux'
         timeout-minutes: 30
         run: |
           # Unset GitHub tokens to prevent electron-builder from auto-publishing
           unset GH_TOKEN
           unset GITHUB_TOKEN
-          npm run build:desktop:${{ matrix.platform }}
+          npm run build:desktop:linux
         env:
-          # Disable electron-builder auto-publish and code signing
           CSC_IDENTITY_AUTO_DISCOVERY: false
-          CI: false
+          CI: true
 
       - name: Build for ${{ matrix.platform }} (Windows)
         if: matrix.os == 'windows-latest'
@@ -72,7 +91,7 @@ jobs:
         env:
           # Disable electron-builder auto-publish and code signing
           CSC_IDENTITY_AUTO_DISCOVERY: false
-          CI: false
+          CI: true
 
       - name: Upload artifacts (macOS/Linux)
         if: matrix.os != 'windows-latest'
