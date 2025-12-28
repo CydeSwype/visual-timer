@@ -114,9 +114,14 @@ function createWindow() {
   const alwaysOnTop = getAlwaysOnTopSetting();
 
   // Create the browser window with saved state
+  // For App Store screenshot: use 1280x800
+  const screenshotMode = process.env.APP_STORE_SCREENSHOT === 'true';
+  const defaultWidth = screenshotMode ? 1280 : (windowState.width || 300);
+  const defaultHeight = screenshotMode ? 800 : (windowState.height || 100);
+  
   mainWindow = new BrowserWindow({
-    width: windowState.width || 300,
-    height: windowState.height || 100,
+    width: defaultWidth,
+    height: defaultHeight,
     x: windowState.x,
     y: windowState.y,
     minWidth: 200,

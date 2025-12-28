@@ -92,7 +92,29 @@ jobs:
           chmod 600 /tmp/AuthKey.p8
           export APPLE_API_KEY=/tmp/AuthKey.p8
 
-          npm run build:desktop:mac
+          # Create an entitlements plist for hardened runtime (Electron helpers need JIT allowances)
+          cat > /tmp/entitlements.mac.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>com.apple.security.cs.allow-jit</key>
+            <true/>
+            <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+            <true/>
+            <key>com.apple.security.cs.disable-library-validation</key>
+            <true/>
+          </dict>
+          </plist>
+          PLIST
+
+          set -o pipefail
+          npm run build:desktop:mac -- \
+            -c.mac.hardenedRuntime=true \
+            -c.mac.entitlements=/tmp/entitlements.mac.plist \
+            -c.mac.entitlementsInherit=/tmp/entitlements.mac.plist \
+            2>&1 | tee /tmp/electron-builder-mac.log
+          exit ${PIPESTATUS[0]}
         env:
           # Enable signing/notarization for mac builds
           CI: true

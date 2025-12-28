@@ -5,6 +5,7 @@
   "main": "desktop/main.js",
   "scripts": {
     "start": "electron desktop/main.js",
+    "start:screenshot": "APP_STORE_SCREENSHOT=true electron desktop/main.js",
     "build:desktop": "electron-builder --publish never",
     "build:desktop:mac": "electron-builder --mac --publish never",
     "build:desktop:win": "electron-builder --win --publish never",
