@@ -51,6 +51,34 @@ jobs:
         shell: pwsh
 
 
+      - name: Preflight macOS signing secrets
+        if: matrix.platform == 'mac'
+        shell: bash
+        run: |
+          missing=0
+          check() {
+            name="$1"
+            val="$2"
+            if [ -z "$val" ]; then
+              echo "Missing required secret: $name"
+              missing=1
+            fi
+          }
+
+          check "MACOS_CERT_P12_BASE64" "${{ secrets.MACOS_CERT_P12_BASE64 }}"
+          check "MACOS_CERT_P12_PASSWORD" "${{ secrets.MACOS_CERT_P12_PASSWORD }}"
+          check "APPLE_TEAM_ID" "${{ secrets.APPLE_TEAM_ID }}"
+          check "APPLE_API_KEY_ID" "${{ secrets.APPLE_API_KEY_ID }}"
+          check "APPLE_API_ISSUER" "${{ secrets.APPLE_API_ISSUER }}"
+          check "APPLE_API_KEY_P8_BASE64" "${{ secrets.APPLE_API_KEY_P8_BASE64 }}"
+
+          if [ "$missing" -ne 0 ]; then
+            echo "One or more required secrets are missing. Go to Settings → Secrets and variables → Actions and verify the names exactly."
+            exit 1
+          fi
+
+          echo "macOS signing secrets appear present."
+
       - name: Build for mac (macOS, signed + notarized)
         if: matrix.platform == 'mac'
         timeout-minutes: 45
@@ -62,7 +90,7 @@ jobs:
           # Write App Store Connect API key to disk for notarytool
           echo "${{ secrets.APPLE_API_KEY_P8_BASE64 }}" | base64 --decode > /tmp/AuthKey.p8
           chmod 600 /tmp/AuthKey.p8
-          export APPLE_API_KEY_PATH=/tmp/AuthKey.p8
+          export APPLE_API_KEY=/tmp/AuthKey.p8
 
           npm run build:desktop:mac
         env:
@@ -74,7 +102,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_API_KEY_PATH: /tmp/AuthKey.p8
+          APPLE_API_KEY: /tmp/AuthKey.p8
 
       - name: Build for linux (Linux)
         if: matrix.platform == 'linux'
