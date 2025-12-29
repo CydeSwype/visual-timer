@@ -78,6 +78,13 @@ jobs:
           fi
 
           echo "macOS signing secrets appear present."
+          
+          # Check for MAS provisioning profile (optional - will warn if missing)
+          if [ -z "${{ secrets.MAS_PROVISIONING_PROFILE_BASE64 }}" ]; then
+            echo "⚠️  Warning: MAS_PROVISIONING_PROFILE_BASE64 not set. MAS build may fail."
+          else
+            echo "✅ MAS provisioning profile secret found."
+          fi
 
       - name: Build for mac (macOS, signed + notarized)
         if: matrix.platform == 'mac'
@@ -125,6 +132,44 @@ jobs:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY: /tmp/AuthKey.p8
+
+      - name: Build for MAS (Mac App Store)
+        if: matrix.platform == 'mac'
+        timeout-minutes: 45
+        run: |
+          # Unset GitHub tokens to prevent electron-builder from auto-publishing
+          unset GH_TOKEN
+          unset GITHUB_TOKEN
+
+          # Write App Store Connect API key to disk for notarytool
+          echo "${{ secrets.APPLE_API_KEY_P8_BASE64 }}" | base64 --decode > /tmp/AuthKey.p8
+          chmod 600 /tmp/AuthKey.p8
+          export APPLE_API_KEY=/tmp/AuthKey.p8
+
+          # Extract and install provisioning profile if provided
+          if [ -n "${{ secrets.MAS_PROVISIONING_PROFILE_BASE64 }}" ]; then
+            echo "Installing MAS provisioning profile..."
+            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+            echo "${{ secrets.MAS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.provisionprofile
+            echo "✅ Provisioning profile installed"
+          else
+            echo "⚠️  No provisioning profile provided - electron-builder will try to auto-discover"
+          fi
+
+          set -o pipefail
+          npm run build:desktop:mas 2>&1 | tee /tmp/electron-builder-mas.log
+          exit ${PIPESTATUS[0]}
+        env:
+          # Enable signing for MAS builds
+          CI: true
+          CSC_IDENTITY_AUTO_DISCOVERY: true
+          CSC_LINK: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERT_P12_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: /tmp/AuthKey.p8
+          # electron-builder should auto-discover the installer certificate from the P12
 
       - name: Build for linux (Linux)
         if: matrix.platform == 'linux'
@@ -192,6 +237,7 @@ jobs:
             -name "*.exe" -o \
             -name "*.AppImage" -o \
             -name "*.deb" -o \
+            -name "*.pkg" -o \
             -name "*.blockmap" \
           \) -not -path "*/node_modules/*" -exec cp {} release-assets/ \;
           echo "Found release assets:"
