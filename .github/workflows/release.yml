@@ -140,11 +140,11 @@ jobs:
           # Unset GitHub tokens to prevent electron-builder from auto-publishing
           unset GH_TOKEN
           unset GITHUB_TOKEN
-
-          # Write App Store Connect API key to disk for notarytool
-          echo "${{ secrets.APPLE_API_KEY_P8_BASE64 }}" | base64 --decode > /tmp/AuthKey.p8
-          chmod 600 /tmp/AuthKey.p8
-          export APPLE_API_KEY=/tmp/AuthKey.p8
+          
+          # Unset notarization variables - MAS apps are validated by App Store Connect, not notarized
+          unset APPLE_API_KEY
+          unset APPLE_API_KEY_ID
+          unset APPLE_API_ISSUER
 
           # Extract and install provisioning profile if provided
           if [ -n "${{ secrets.MAS_PROVISIONING_PROFILE_BASE64 }}" ]; then
@@ -157,18 +157,17 @@ jobs:
           fi
 
           set -o pipefail
-          npm run build:desktop:mas 2>&1 | tee /tmp/electron-builder-mas.log
+          # Explicitly disable notarization for MAS builds
+          npm run build:desktop:mas -- --config.mac.notarize=null 2>&1 | tee /tmp/electron-builder-mas.log
           exit ${PIPESTATUS[0]}
         env:
-          # Enable signing for MAS builds
+          # Enable signing for MAS builds (but NOT notarization)
           CI: true
           CSC_IDENTITY_AUTO_DISCOVERY: true
           CSC_LINK: ${{ secrets.MACOS_CERT_P12_BASE64 }}
           CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERT_P12_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_API_KEY: /tmp/AuthKey.p8
+          # Do NOT set APPLE_API_KEY* variables - they trigger notarization which MAS apps don't need
           # electron-builder should auto-discover the installer certificate from the P12
 
       - name: Build for linux (Linux)
