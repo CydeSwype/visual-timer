@@ -18,3 +18,11 @@ RELEASE_NOTES_v1.5.0.md
 PRIVACY_POLICY.md
 BUILD.md
 Visual_Timer_Mac_App_Store.provisionprofile
+
+# Certificate files (contain private keys - NEVER commit!)
+*.p12
+mas-certificates-combined.p12
+mas-certificates-combined-base64.txt
+*-certificates*.p12
+*-certificates*.txt
+Certificates*.p12

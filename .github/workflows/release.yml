@@ -164,8 +164,9 @@ jobs:
           # Enable signing for MAS builds (but NOT notarization)
           CI: true
           CSC_IDENTITY_AUTO_DISCOVERY: true
-          CSC_LINK: ${{ secrets.MACOS_CERT_P12_BASE64 }}
-          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERT_P12_PASSWORD }}
+          # Use MAS-specific P12 if available, otherwise fall back to regular P12
+          CSC_LINK: ${{ secrets.MAS_CERT_P12_BASE64 || secrets.MACOS_CERT_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAS_CERT_P12_PASSWORD || secrets.MACOS_CERT_P12_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           # Do NOT set APPLE_API_KEY* variables - they trigger notarization which MAS apps don't need
           # electron-builder should auto-discover the installer certificate from the P12
