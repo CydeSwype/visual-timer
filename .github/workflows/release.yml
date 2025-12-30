@@ -146,6 +146,15 @@ jobs:
           unset APPLE_API_KEY_ID
           unset APPLE_API_ISSUER
 
+          # Check if MAS certificates are available
+          if [ -z "${{ secrets.MAS_CERT_P12_BASE64 }}" ]; then
+            echo "❌ ERROR: MAS_CERT_P12_BASE64 secret is not set!"
+            echo "Please add MAS_CERT_P12_BASE64 and MAS_CERT_P12_PASSWORD to GitHub Secrets"
+            echo "The regular MACOS_CERT_P12_BASE64 only contains Developer ID certificates, not MAS certificates"
+            exit 1
+          fi
+          echo "✅ MAS certificate secret found"
+
           # Extract and install provisioning profile if provided
           if [ -n "${{ secrets.MAS_PROVISIONING_PROFILE_BASE64 }}" ]; then
             echo "Installing MAS provisioning profile..."
@@ -164,9 +173,10 @@ jobs:
           # Enable signing for MAS builds (but NOT notarization)
           CI: true
           CSC_IDENTITY_AUTO_DISCOVERY: true
-          # Use MAS-specific P12 if available, otherwise fall back to regular P12
-          CSC_LINK: ${{ secrets.MAS_CERT_P12_BASE64 || secrets.MACOS_CERT_P12_BASE64 }}
-          CSC_KEY_PASSWORD: ${{ secrets.MAS_CERT_P12_PASSWORD || secrets.MACOS_CERT_P12_PASSWORD }}
+          # MUST use MAS-specific P12 (contains 3rd Party Mac Developer certificates)
+          # Regular MACOS_CERT_P12_BASE64 only has Developer ID certificates which won't work for MAS
+          CSC_LINK: ${{ secrets.MAS_CERT_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAS_CERT_P12_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           # Do NOT set APPLE_API_KEY* variables - they trigger notarization which MAS apps don't need
           # electron-builder should auto-discover the installer certificate from the P12
