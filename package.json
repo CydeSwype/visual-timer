@@ -79,8 +79,7 @@
       "minimumSystemVersion": "11.0",
       "target": [
         "pkg"
-      ],
-      "notarize": null
+      ]
     },
     "afterSign": "scripts/fix-mas-icon.js"
   }

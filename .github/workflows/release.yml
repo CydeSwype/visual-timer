@@ -157,8 +157,8 @@ jobs:
           fi
 
           set -o pipefail
-          # Explicitly disable notarization for MAS builds
-          npm run build:desktop:mas -- --config.mac.notarize=null 2>&1 | tee /tmp/electron-builder-mas.log
+          # Build MAS package (notarization disabled by unsetting APPLE_API_KEY* vars above)
+          npm run build:desktop:mas 2>&1 | tee /tmp/electron-builder-mas.log
           exit ${PIPESTATUS[0]}
         env:
           # Enable signing for MAS builds (but NOT notarization)
