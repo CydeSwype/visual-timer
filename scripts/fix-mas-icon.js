@@ -27,27 +27,27 @@ exports.default = async function(context) {
       const iconPath = path.join(appBundlePath, 'Contents', 'Resources', 'icon.icns');
       const sourceIconPath = path.join(__dirname, '..', 'desktop', 'assets', 'icon.icns');
       
-      // Always re-sign with correct identifier to match provisioning profile
-      // For MAS apps with provisioning profiles, the identifier must match the provisioning profile's application-identifier
-      // which is TeamID.BundleID (e.g., 4MSL3T2696.com.iandmiller.visualtimer)
-      const identity = '3rd Party Mac Developer Application: Ian Miller (4MSL3T2696)';
-      const provisioningProfilePath = path.join(appBundlePath, 'Contents', 'embedded.provisionprofile');
-      const entitlements = path.join(__dirname, '..', 'desktop', 'entitlements.mas.plist');
+      // Discover the MAS certificate identity dynamically
+      let identity;
+      let iconReplaced = false;
       
-      // Check if provisioning profile exists and extract the application-identifier
-      let appIdentifier = 'com.iandmiller.visualtimer'; // fallback to bundle ID
-      if (fs.existsSync(provisioningProfilePath)) {
-        try {
-          const profileContent = execSync(`security cms -D -i "${provisioningProfilePath}"`, { encoding: 'utf8' });
-          const match = profileContent.match(/<key>application-identifier<\/key>\s*<string>([^<]+)<\/string>/);
-          if (match && match[1]) {
-            appIdentifier = match[1];
-            console.log(`Found application-identifier in provisioning profile: ${appIdentifier}`);
-          }
-        } catch (e) {
-          console.warn('Could not read provisioning profile, using bundle ID');
+      try {
+        // Find the "3rd Party Mac Developer Application" certificate
+        const identities = execSync('security find-identity -v -p codesigning', { encoding: 'utf8' });
+        // Match the full certificate name including team ID
+        const masAppMatch = identities.match(/"3rd Party Mac Developer Application: ([^"]+)"/);
+        if (masAppMatch) {
+          identity = `3rd Party Mac Developer Application: ${masAppMatch[1]}`;
+          console.log(`Found MAS certificate: ${identity}`);
+        } else {
+          throw new Error('Could not find MAS certificate in keychain');
         }
+      } catch (e) {
+        console.error('Failed to discover MAS certificate identity:', e.message);
+        throw new Error('Could not find "3rd Party Mac Developer Application" certificate in keychain');
       }
+      
+      const entitlements = path.join(__dirname, '..', 'desktop', 'entitlements.mas.plist');
       
       // Handle icon replacement if needed
       if (fs.existsSync(iconPath) && fs.existsSync(sourceIconPath)) {
@@ -58,6 +58,7 @@ exports.default = async function(context) {
           console.log('Replacing ICNS file (electron-builder converted it to older format)...');
           fs.copyFileSync(sourceIconPath, iconPath);
           console.log('✅ ICNS file replaced successfully');
+          iconReplaced = true;
         } else {
           console.log('✅ ICNS file is already correct (not converted by electron-builder)');
         }
@@ -65,16 +66,19 @@ exports.default = async function(context) {
         console.warn('⚠️  Could not find icon files:', { iconPath, sourceIconPath, appBundlePath });
       }
       
-      // Always re-sign with the correct identifier (matches provisioning profile)
-      try {
-        console.log(`Re-signing app bundle with identifier: ${appIdentifier}...`);
-        execSync(`codesign --force --deep --sign "${identity}" --identifier "${appIdentifier}" --entitlements "${entitlements}" --options runtime "${appBundlePath}"`, {
-          stdio: 'inherit'
-        });
-        console.log('✅ App bundle re-signed successfully');
-      } catch (error) {
-        console.error('❌ Failed to re-sign app bundle:', error.message);
-        throw error;
+      // Only re-sign if we replaced the icon (to maintain valid signature)
+      // Note: For MAS, codesign will use the bundle ID from Info.plist automatically
+      if (iconReplaced) {
+        try {
+          console.log('Re-signing app bundle after icon replacement...');
+          execSync(`codesign --force --deep --sign "${identity}" --entitlements "${entitlements}" --options runtime "${appBundlePath}"`, {
+            stdio: 'inherit'
+          });
+          console.log('✅ App bundle re-signed successfully');
+        } catch (error) {
+          console.error('❌ Failed to re-sign app bundle:', error.message);
+          throw error;
+        }
       }
     }
   }
