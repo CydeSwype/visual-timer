@@ -41,28 +41,28 @@ function get_test_date_string(date) {
 // Test function to verify midnight reset logic
 function test_midnight_reset() {
   console.log('=== Testing Midnight Reset Logic ===');
-  
+
   // Save current state
   const original_points = points_today;
   const original_last_award_time = points_last_award_time;
-  
+
   // Simulate having points from yesterday
   points_today = 50;
   points_last_award_time = new Date(Date.now() - 24 * 60 * 60 * 1000).getTime(); // Yesterday
-  
+
   console.log('Before reset - points_today:', points_today);
   console.log('Before reset - last_award_time:', new Date(points_last_award_time));
-  
+
   // Call award_point which should detect date change and reset
   award_point();
-  
+
   console.log('After reset - points_today:', points_today);
   console.log('After reset - last_award_time:', new Date(points_last_award_time));
-  
+
   // Restore original state
   points_today = original_points;
   points_last_award_time = original_last_award_time;
-  
+
   console.log('=== Test Complete ===');
 }
 
@@ -100,9 +100,9 @@ function schedule_midnight_points_reset() {
   const now = new Date();
   const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const msUntilMidnight = nextMidnight - now;
-  
+
   console.log(`Scheduling midnight reset in ${Math.round(msUntilMidnight / 1000 / 60)} minutes`);
-  
+
   window._midnight_points_reset_timeout = setTimeout(() => {
     console.log('Midnight reached - resetting points for new day');
     reset_points_for_new_day();
@@ -171,8 +171,8 @@ function update_hover_controls() {
 }
 
 function award_point() {
-  console.log('award_point called', {is_task_timer_running, timer_paused, timer_is_complete});
-  
+  console.log('award_point called', { is_task_timer_running, timer_paused, timer_is_complete });
+
   // Check if the date has changed since we last awarded a point
   const current_date = get_today_date_string();
   if (points_last_award_time) {
@@ -183,7 +183,7 @@ function award_point() {
       reset_points_for_new_day();
     }
   }
-  
+
   if (is_task_timer_running && !timer_paused && timer_is_complete === 0) {
     points_today++;
     save_gamification_data();
@@ -197,7 +197,7 @@ function award_point() {
 function start_points_tracking() {
   if (points_interval || points_timeout) return; // Only start if not already running
   console.log('start_points_tracking called');
-  
+
   // Check if the date has changed since we last tracked points
   const current_date = get_today_date_string();
   if (points_last_award_time) {
@@ -208,10 +208,10 @@ function start_points_tracking() {
       reset_points_for_new_day();
     }
   }
-  
+
   // If resuming, use the remaining ms, otherwise start fresh
   if (points_award_remaining_ms < 60000) {
-    points_timeout = setTimeout(function() {
+    points_timeout = setTimeout(function () {
       award_point();
       points_timeout = null;
       points_interval = setInterval(award_point, 60000);
@@ -284,10 +284,10 @@ function timer_complete() {
   timer_complete_interval = setInterval(function () {
     // Increment overtime counter
     overtime_seconds++;
-    
+
     // Update timer display with negative time
     update_timer(-overtime_seconds);
-    
+
     // Continue flashing behavior
     toggle_colors(
       "#timer",
@@ -326,7 +326,7 @@ function format_time(seconds) {
   var minutes = Math.floor(abs_seconds / 60);
   var seconds_remaining = abs_seconds % 60;
   var prefix = is_negative ? "-" : "";
-  
+
   if (minutes > 99) {
     var final_time =
       prefix +
@@ -512,7 +512,7 @@ function catch_onkeydown(e) {
       }
     }
   }
-  
+
   // Handle backspace for timer input
   if (e.key == "Backspace" && input_minutes !== "") {
     input_minutes = input_minutes.slice(0, -1);
@@ -720,7 +720,7 @@ function handle_custom_audio(file_input) {
   if (file_input.files && file_input.files[0]) {
     var file = file_input.files[0];
     var reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       custom_audio_file = e.target.result;
     };
     reader.readAsDataURL(file);
@@ -796,7 +796,7 @@ function restore_config() {
         document.getElementById("config_show_hover_controls").checked = show_hover_controls;
       }
       update_hover_controls();
-      
+
       // restore always_on_top (desktop app only)
       if (window.electronAPI && window.electronAPI.isElectron) {
         window.electronAPI.getAlwaysOnTop().then((isAlwaysOnTop) => {
@@ -835,7 +835,7 @@ function save_config() {
   // cycle through form elements and save the values to localstorage
   var config_data = {};
   config_data["default_timer_length"] = start_timer_seconds / 60; // current_timer is in seconds, need to convert to mins
-  
+
   document.querySelectorAll(".config_el").forEach(function (o) {
     if (o.type == "checkbox") {
       config_data[o.name] = o.checked;
@@ -873,7 +873,7 @@ function save_config() {
 
   // immediately update hover controls visibility
   update_hover_controls();
-  
+
   // immediately update always on top (desktop app only)
   if (window.electronAPI && window.electronAPI.isElectron) {
     const alwaysOnTopCheckbox = document.getElementById("config_always_on_top");
@@ -927,6 +927,15 @@ function add_task(new_task_name, new_task_estimate, save = true) {
   new_task.querySelector(".start").setAttribute("minutes", new_task_estimate);
   new_task.querySelector(".start").setAttribute("description", new_task_name);
   new_task.setAttribute("task-id", task_id);
+  // add draggable attribute
+  new_task.setAttribute("draggable", "true");
+  new_task.addEventListener("dragstart", handleDragStart);
+  new_task.addEventListener("dragover", handleDragOver);
+  new_task.addEventListener("drop", handleDrop);
+  new_task.addEventListener("dragenter", handleDragEnter);
+  new_task.addEventListener("dragleave", handleDragLeave);
+  new_task.addEventListener("dragend", handleDragEnd);
+
   document.getElementById("tasks").appendChild(new_task);
 
   // add to store in localstorage
@@ -1036,6 +1045,101 @@ function hookup_task_input() {
   });
 }
 
+// --- Drag and Drop Handlers ---
+var dragSrcEl = null;
+
+function handleDragStart(e) {
+  this.classList.add('dragging');
+  dragSrcEl = this;
+
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', this.innerHTML);
+}
+
+function handleDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault(); // Necessary. Allows us to drop.
+  }
+  e.dataTransfer.dropEffect = 'move';
+  this.classList.add('drag-over');
+  return false;
+}
+
+function handleDragEnter(e) {
+  this.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+  this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation(); // stops the browser from redirecting.
+  }
+
+  // Don't do anything if dropping the same column we're dragging.
+  if (dragSrcEl != this) {
+    // Use insertBefore for reordering DOM nodes to preserve event listeners
+
+    const tasksContainer = document.getElementById('tasks');
+    const children = Array.from(tasksContainer.children);
+    const srcIndex = children.indexOf(dragSrcEl);
+    const targetIndex = children.indexOf(this);
+
+    if (srcIndex < targetIndex) {
+      // Dragging downwards: Insert after the target (before target's next sibling)
+      tasksContainer.insertBefore(dragSrcEl, this.nextSibling);
+    } else {
+      // Dragging upwards: Insert before the target
+      tasksContainer.insertBefore(dragSrcEl, this);
+    }
+
+    // Save the new order
+    update_task_order_from_dom();
+  }
+
+  return false;
+}
+
+function handleDragEnd(e) {
+  this.classList.remove('dragging');
+
+  var tasks = document.querySelectorAll('#tasks .task');
+  [].forEach.call(tasks, function (task) {
+    task.classList.remove('drag-over');
+  });
+}
+
+function update_task_order_from_dom() {
+  var tasks = document.querySelectorAll('#tasks .task');
+  var task_data = [];
+
+  // Re-assign task-ids based on new order and rebuild data array
+  tasks.forEach((task, index) => {
+    task.setAttribute('task-id', index);
+
+    var estimate = 0;
+    var name = "";
+
+    var startBtn = task.querySelector(".start");
+    if (startBtn) {
+      estimate = startBtn.getAttribute("minutes");
+      name = startBtn.getAttribute("description");
+    }
+
+    var t = new Object();
+    t.name = name;
+    t.estimate = estimate;
+    task_data.push(t);
+  });
+
+  localStorage.setItem("tasks", JSON.stringify(task_data));
+
+  // Important: Update task summary for total time calculation
+  populate_task_summary(task_data);
+}
+
 function hookup_task_buttons() {
   document.querySelectorAll("#task-list .start.button").forEach((el) => {
     el.addEventListener("click", () => {
@@ -1059,27 +1163,27 @@ function init() {
       return false;
     });
 
-  document.querySelector("#config_ding").addEventListener("change", function() {
+  document.querySelector("#config_ding").addEventListener("change", function () {
     toggle_audio(this);
   });
 
-  document.querySelector("#config_custom_audio").addEventListener("change", function() {
+  document.querySelector("#config_custom_audio").addEventListener("change", function () {
     handle_custom_audio(this);
   });
 
-  document.querySelector("#config_bgcolor").addEventListener("change", function() {
+  document.querySelector("#config_bgcolor").addEventListener("change", function () {
     change_bgcolor(this);
   });
 
   // Add validation for daily points threshold input
-  document.querySelector("#config_points_threshold").addEventListener("blur", function() {
+  document.querySelector("#config_points_threshold").addEventListener("blur", function () {
     var value = parseInt(this.value);
     var min = parseInt(this.min);
     var max = parseInt(this.max);
-    
+
     // Store the previous valid value
     var previousValue = daily_points_threshold || 100;
-    
+
     // Validate the input
     if (isNaN(value) || value < min || value > max) {
       // Reset to previous valid value
@@ -1092,16 +1196,16 @@ function init() {
   });
 
   // Add input validation for immediate feedback
-  document.querySelector("#config_points_threshold").addEventListener("input", function() {
+  document.querySelector("#config_points_threshold").addEventListener("input", function () {
     var value = parseInt(this.value);
     var min = parseInt(this.min);
     var max = parseInt(this.max);
-    
+
     // If the input is empty, allow it (user might be typing)
     if (this.value === "") {
       return;
     }
-    
+
     // If the value is invalid, show visual feedback
     if (isNaN(value) || value < min || value > max) {
       this.style.borderColor = "#ff0000";
@@ -1115,7 +1219,7 @@ function init() {
     .addEventListener("click", () => {
       close_config();
     });
-  
+
   // Apply always on top immediately when checkbox is toggled (desktop app only)
   if (window.electronAPI && window.electronAPI.isElectron) {
     const alwaysOnTopCheckbox = document.getElementById("config_always_on_top");
@@ -1193,7 +1297,7 @@ window.onload = function () {
       alwaysOnTopRow.style.display = 'flex';
     }
   }
-  
+
   restore_config();
   restore_tasks();
   restore_gamification_data();
@@ -1204,7 +1308,7 @@ window.onload = function () {
 
   // Responsive font size for timer description
   window.addEventListener('resize', () => fitTextToContainer("timer-description"));
-  
+
   // Save window state to localStorage (for extension persistence)
   function saveWindowStateToStorage() {
     try {
@@ -1219,7 +1323,7 @@ window.onload = function () {
       // Ignore errors (e.g., in contexts where localStorage isn't available)
     }
   }
-  
+
   // Load and apply saved window state (only in extension context)
   function loadWindowStateFromStorage() {
     try {
@@ -1241,17 +1345,17 @@ window.onload = function () {
       // Ignore errors
     }
   }
-  
+
   // Save window state on move/resize (debounced)
   let saveStateTimeout;
   function debouncedSaveWindowState() {
     clearTimeout(saveStateTimeout);
     saveStateTimeout = setTimeout(saveWindowStateToStorage, 500);
   }
-  
+
   window.addEventListener('resize', debouncedSaveWindowState);
   window.addEventListener('move', debouncedSaveWindowState);
-  
+
   // Load state on page load
   loadWindowStateFromStorage();
 };
