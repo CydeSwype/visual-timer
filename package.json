@@ -1,6 +1,6 @@
 {
   "name": "keytimer",
-  "version": "1.6.0",
+  "version": "1.6.2",
   "description": "A keyboard-first productivity timer with task management and gamification features",
   "main": "desktop/main.js",
   "scripts": {
@@ -26,8 +26,8 @@
   },
   "license": "ISC",
   "devDependencies": {
-    "electron": "^29.0.0",
-    "electron-builder": "^24.9.1",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.4.0",
     "jimp": "^1.6.0"
   },
   "build": {
@@ -75,12 +75,10 @@
       "entitlements": "desktop/entitlements.mas.plist",
       "entitlementsInherit": "desktop/entitlements.mas.inherit.plist",
       "type": "distribution",
-      "preAutoEntitlements": false,
-      "minimumSystemVersion": "11.0",
+      "minimumSystemVersion": "12.0",
       "target": [
         "pkg"
       ]
-    },
-    "afterSign": "scripts/fix-mas-icon.js"
+    }
   }
 }

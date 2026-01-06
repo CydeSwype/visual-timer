@@ -177,6 +177,9 @@ function createWindow() {
 // Set app name for proper display in task switcher/dock
 app.setName('Visual Timer');
 
+// Set app name for proper display in task switcher/dock
+app.setName('Visual Timer');
+
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   // Set app icon for macOS dock (needed for development mode)
