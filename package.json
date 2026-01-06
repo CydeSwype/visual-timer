@@ -75,7 +75,7 @@
       "entitlements": "desktop/entitlements.mas.plist",
       "entitlementsInherit": "desktop/entitlements.mas.inherit.plist",
       "type": "distribution",
-      "preAutoEntitlements": false,
+      "preAutoEntitlements": true,
       "minimumSystemVersion": "11.0",
       "target": [
         "pkg"
