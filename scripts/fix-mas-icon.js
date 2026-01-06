@@ -150,13 +150,25 @@ exports.default = async function(context) {
             }
           }
           
-          // Sign Electron Framework
+          // Sign Electron Framework - must sign the executable inside the framework
           const electronFrameworkPath = path.join(frameworksPath, 'Electron Framework.framework');
-          if (fs.existsSync(electronFrameworkPath)) {
+          const electronFrameworkExecutable = path.join(electronFrameworkPath, 'Versions', 'A', 'Electron Framework');
+          if (fs.existsSync(electronFrameworkExecutable)) {
+            // Sign the executable inside the framework first
+            execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${electronFrameworkExecutable}"`, {
+              stdio: 'inherit'
+            });
+            // Then sign the framework bundle
             execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${electronFrameworkPath}"`, {
               stdio: 'inherit'
             });
-            console.log('✅ Re-signed Electron Framework');
+            console.log('✅ Re-signed Electron Framework (executable and bundle)');
+          } else if (fs.existsSync(electronFrameworkPath)) {
+            // Fallback: sign the framework bundle if executable path doesn't exist
+            execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${electronFrameworkPath}"`, {
+              stdio: 'inherit'
+            });
+            console.log('✅ Re-signed Electron Framework (bundle only)');
           }
           
           // Sign main app bundle last
