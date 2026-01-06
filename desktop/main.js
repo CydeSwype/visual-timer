@@ -177,13 +177,8 @@ function createWindow() {
 // Set app name for proper display in task switcher/dock
 app.setName('Visual Timer');
 
-// For MAS builds, configure Electron to work within sandbox constraints
-// Note: Electron's Mach port rendezvous may be blocked by sandbox
-// This is a known limitation - Electron should handle this gracefully
-if (process.mas) {
-  // Configure Electron for MAS sandbox environment
-  app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor');
-}
+// Set app name for proper display in task switcher/dock
+app.setName('Visual Timer');
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {

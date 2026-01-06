@@ -75,12 +75,10 @@
       "entitlements": "desktop/entitlements.mas.plist",
       "entitlementsInherit": "desktop/entitlements.mas.inherit.plist",
       "type": "distribution",
-      "preAutoEntitlements": true,
       "minimumSystemVersion": "12.0",
       "target": [
         "pkg"
       ]
-    },
-    "afterSign": "scripts/fix-mas-icon.js"
+    }
   }
 }
