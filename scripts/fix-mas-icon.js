@@ -74,19 +74,56 @@ exports.default = async function(context) {
         console.warn('⚠️  Could not find icon files:', { iconPath, sourceIconPath, appBundlePath });
       }
       
-      // Only re-sign if we actually replaced the icon
-      if (iconReplaced) {
+      // Always re-sign to ensure entitlements are properly applied to all components
+      // This is critical for MAS builds where helpers need inherit entitlements
+      {
         const entitlements = path.join(__dirname, '..', 'desktop', 'entitlements.mas.plist');
+        const entitlementsInherit = path.join(__dirname, '..', 'desktop', 'entitlements.mas.inherit.plist');
+        const frameworksPath = path.join(appBundlePath, 'Contents', 'Frameworks');
+        const helpersPath = path.join(appBundlePath, 'Contents', 'Frameworks', 'Electron Framework.framework', 'Versions', 'A', 'Helpers');
         
         try {
           console.log('Re-signing app bundle after icon replacement...');
-          execSync(`codesign --force --deep --sign "${identity}" --entitlements "${entitlements}" --options runtime "${appBundlePath}"`, {
+          
+          // Sign helpers first (they need inherit entitlements)
+          if (fs.existsSync(helpersPath)) {
+            const helpers = fs.readdirSync(helpersPath);
+            for (const helper of helpers) {
+              const helperPath = path.join(helpersPath, helper);
+              if (fs.statSync(helperPath).isFile() && !helper.endsWith('.plist')) {
+                try {
+                  execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${helperPath}"`, {
+                    stdio: 'inherit'
+                  });
+                  console.log(`✅ Re-signed helper: ${helper}`);
+                } catch (e) {
+                  console.warn(`⚠️  Could not re-sign helper ${helper}: ${e.message}`);
+                }
+              }
+            }
+          }
+          
+          // Sign Electron Framework
+          const electronFrameworkPath = path.join(frameworksPath, 'Electron Framework.framework');
+          if (fs.existsSync(electronFrameworkPath)) {
+            execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${electronFrameworkPath}"`, {
+              stdio: 'inherit'
+            });
+            console.log('✅ Re-signed Electron Framework');
+          }
+          
+          // Sign main app bundle last
+          execSync(`codesign --force --sign "${identity}" --entitlements "${entitlements}" --options runtime "${appBundlePath}"`, {
             stdio: 'inherit'
           });
           console.log('✅ App bundle re-signed successfully');
         } catch (error) {
           console.error('❌ Failed to re-sign app bundle:', error.message);
-          throw error; // This is critical - if we replaced the icon, we MUST re-sign
+          if (iconReplaced) {
+            throw error; // This is critical - if we replaced the icon, we MUST re-sign
+          } else {
+            console.warn('⚠️  Re-signing failed but icon was not replaced, continuing...');
+          }
         }
       }
     }
