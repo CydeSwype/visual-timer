@@ -85,7 +85,33 @@ exports.default = async function(context) {
         try {
           console.log('Re-signing app bundle after icon replacement...');
           
-          // Sign helpers first (they need inherit entitlements)
+          // Collect all helper apps first (we need to sign deepest first)
+          const helperApps = [];
+          const findHelpers = (dir, basePath = '') => {
+            const items = fs.readdirSync(dir);
+            for (const item of items) {
+              const itemPath = path.join(dir, item);
+              try {
+                const stat = fs.statSync(itemPath);
+                if (stat.isDirectory() && item.endsWith('.app') && item.includes('Helper')) {
+                  helperApps.push(itemPath);
+                } else if (stat.isDirectory() && !item.includes('.framework') && !item.endsWith('.app')) {
+                  // Recursively search subdirectories (but skip .framework bundles and .app bundles)
+                  findHelpers(itemPath);
+                }
+              } catch (e) {
+                // Skip if we can't read the item
+              }
+            }
+          };
+          
+          // Find all helper apps
+          const contentsPath = path.join(appBundlePath, 'Contents');
+          if (fs.existsSync(contentsPath)) {
+            findHelpers(contentsPath);
+          }
+          
+          // Sign helpers inside Electron Framework first (deepest level)
           if (fs.existsSync(helpersPath)) {
             const helpers = fs.readdirSync(helpersPath);
             for (const helper of helpers) {
@@ -100,6 +126,27 @@ exports.default = async function(context) {
                   console.warn(`⚠️  Could not re-sign helper ${helper}: ${e.message}`);
                 }
               }
+            }
+          }
+          
+          // Sign all helper .app bundles (in reverse depth order - deepest first)
+          helperApps.sort((a, b) => b.split(path.sep).length - a.split(path.sep).length);
+          for (const helperApp of helperApps) {
+            try {
+              // Sign the helper app
+              execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${helperApp}"`, {
+                stdio: 'inherit'
+              });
+              
+              // Verify the signature was applied
+              try {
+                execSync(`codesign -v "${helperApp}"`, { stdio: 'pipe' });
+                console.log(`✅ Re-signed and verified helper app: ${helperApp.replace(appBundlePath, '')}`);
+              } catch (verifyError) {
+                console.warn(`⚠️  Helper app signed but verification failed: ${helperApp.replace(appBundlePath, '')}`);
+              }
+            } catch (e) {
+              console.warn(`⚠️  Could not re-sign helper app ${helperApp}: ${e.message}`);
             }
           }
           
