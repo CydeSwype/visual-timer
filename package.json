@@ -1,6 +1,6 @@
 {
   "name": "keytimer",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "A keyboard-first productivity timer with task management and gamification features",
   "main": "desktop/main.js",
   "scripts": {
