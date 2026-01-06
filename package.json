@@ -26,8 +26,8 @@
   },
   "license": "ISC",
   "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.4.0",
     "jimp": "^1.6.0"
   },
   "build": {
@@ -76,7 +76,7 @@
       "entitlementsInherit": "desktop/entitlements.mas.inherit.plist",
       "type": "distribution",
       "preAutoEntitlements": true,
-      "minimumSystemVersion": "11.0",
+      "minimumSystemVersion": "12.0",
       "target": [
         "pkg"
       ]
