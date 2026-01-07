@@ -118,7 +118,8 @@ exports.default = async function(context) {
               const helperPath = path.join(helpersPath, helper);
               if (fs.statSync(helperPath).isFile() && !helper.endsWith('.plist')) {
                 try {
-                  execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${helperPath}"`, {
+                  // Don't use --options runtime for MAS builds (that's for Developer ID only)
+                  execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" "${helperPath}"`, {
                     stdio: 'inherit'
                   });
                   console.log(`✅ Re-signed helper: ${helper}`);
@@ -133,8 +134,8 @@ exports.default = async function(context) {
           helperApps.sort((a, b) => b.split(path.sep).length - a.split(path.sep).length);
           for (const helperApp of helperApps) {
             try {
-              // Sign the helper app
-              execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${helperApp}"`, {
+              // Sign the helper app (no --options runtime for MAS builds)
+              execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" "${helperApp}"`, {
                 stdio: 'inherit'
               });
               
@@ -154,25 +155,25 @@ exports.default = async function(context) {
           const electronFrameworkPath = path.join(frameworksPath, 'Electron Framework.framework');
           const electronFrameworkExecutable = path.join(electronFrameworkPath, 'Versions', 'A', 'Electron Framework');
           if (fs.existsSync(electronFrameworkExecutable)) {
-            // Sign the executable inside the framework first
-            execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${electronFrameworkExecutable}"`, {
+            // Sign the executable inside the framework first (no --options runtime for MAS)
+            execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" "${electronFrameworkExecutable}"`, {
               stdio: 'inherit'
             });
             // Then sign the framework bundle
-            execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${electronFrameworkPath}"`, {
+            execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" "${electronFrameworkPath}"`, {
               stdio: 'inherit'
             });
             console.log('✅ Re-signed Electron Framework (executable and bundle)');
           } else if (fs.existsSync(electronFrameworkPath)) {
             // Fallback: sign the framework bundle if executable path doesn't exist
-            execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" --options runtime "${electronFrameworkPath}"`, {
+            execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" "${electronFrameworkPath}"`, {
               stdio: 'inherit'
             });
             console.log('✅ Re-signed Electron Framework (bundle only)');
           }
           
-          // Sign main app bundle last
-          execSync(`codesign --force --sign "${identity}" --entitlements "${entitlements}" --options runtime "${appBundlePath}"`, {
+          // Sign main app bundle last (no --options runtime for MAS builds)
+          execSync(`codesign --force --sign "${identity}" --entitlements "${entitlements}" "${appBundlePath}"`, {
             stdio: 'inherit'
           });
           console.log('✅ App bundle re-signed successfully');

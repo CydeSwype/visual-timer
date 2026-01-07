@@ -168,7 +168,49 @@ jobs:
           set -o pipefail
           # Build MAS package (notarization disabled by unsetting APPLE_API_KEY* vars above)
           npm run build:desktop:mas 2>&1 | tee /tmp/electron-builder-mas.log
-          exit ${PIPESTATUS[0]}
+          BUILD_EXIT=$?
+          
+          # Verify and fix PKG signing if needed
+          PKG_FILE=$(find dist -name "*.pkg" -type f | head -1)
+          if [ -n "$PKG_FILE" ] && [ -f "$PKG_FILE" ]; then
+            echo "Checking PKG signature: $PKG_FILE"
+            
+            # Check if PKG is signed with installer certificate
+            if ! pkgutil --check-signature "$PKG_FILE" 2>&1 | grep -q "3rd Party Mac Developer Installer"; then
+              echo "⚠️  PKG not signed with installer certificate, re-signing..."
+              
+              # Find installer identity
+              INSTALLER_IDENTITY=$(security find-identity -v -p basic | grep "3rd Party Mac Developer Installer" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+              
+              if [ -n "$INSTALLER_IDENTITY" ]; then
+                echo "Found installer identity: $INSTALLER_IDENTITY"
+                
+                # Re-sign the PKG with installer certificate
+                TEMP_PKG="${PKG_FILE}.temp"
+                productsign --sign "$INSTALLER_IDENTITY" "$PKG_FILE" "$TEMP_PKG"
+                
+                if [ -f "$TEMP_PKG" ]; then
+                  mv "$TEMP_PKG" "$PKG_FILE"
+                  echo "✅ PKG re-signed with installer certificate"
+                  
+                  # Verify the signature
+                  pkgutil --check-signature "$PKG_FILE"
+                else
+                  echo "❌ Failed to re-sign PKG"
+                  exit 1
+                fi
+              else
+                echo "❌ Could not find 3rd Party Mac Developer Installer certificate"
+                exit 1
+              fi
+            else
+              echo "✅ PKG already signed with installer certificate"
+            fi
+          else
+            echo "⚠️  No PKG file found"
+          fi
+          
+          exit $BUILD_EXIT
         env:
           # Enable signing for MAS builds (but NOT notarization)
           CI: true
