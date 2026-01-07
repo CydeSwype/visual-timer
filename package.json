@@ -70,7 +70,7 @@
     "mas": {
       "category": "public.app-category.productivity",
       "icon": "desktop/assets/icon.icns",
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "entitlements": "desktop/entitlements.mas.plist",
       "entitlementsInherit": "desktop/entitlements.mas.inherit.plist",
