@@ -145,6 +145,11 @@ jobs:
           unset APPLE_API_KEY
           unset APPLE_API_KEY_ID
           unset APPLE_API_ISSUER
+          
+          # CRITICAL: Unset APPLE_TEAM_ID to prevent electron-builder from auto-adding 
+          # com.apple.developer.team-identifier to entitlements. For MAS apps, team-identifier
+          # must come ONLY from the provisioning profile, not from entitlements file.
+          unset APPLE_TEAM_ID
 
           # Check if MAS certificates are available
           if [ -z "${{ secrets.MAS_CERT_P12_BASE64 }}" ]; then
@@ -167,6 +172,7 @@ jobs:
 
           set -o pipefail
           # Build MAS package (notarization disabled by unsetting APPLE_API_KEY* vars above)
+          # APPLE_TEAM_ID is also unset to prevent auto-adding team-identifier to entitlements
           npm run build:desktop:mas 2>&1 | tee /tmp/electron-builder-mas.log
           BUILD_EXIT=$?
           
@@ -219,7 +225,9 @@ jobs:
           # Regular MACOS_CERT_P12_BASE64 only has Developer ID certificates which won't work for MAS
           CSC_LINK: ${{ secrets.MAS_CERT_P12_BASE64 }}
           CSC_KEY_PASSWORD: ${{ secrets.MAS_CERT_P12_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # NOTE: APPLE_TEAM_ID is intentionally NOT set here - it causes electron-builder
+          # to add com.apple.developer.team-identifier to entitlements, which breaks MAS validation.
+          # The team-identifier must come ONLY from the provisioning profile.
           # Do NOT set APPLE_API_KEY* variables - they trigger notarization which MAS apps don't need
           # electron-builder should auto-discover the installer certificate from the P12
 
@@ -246,12 +254,51 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           CI: true
 
+      - name: Prepare artifacts for upload
+        if: matrix.os != 'windows-latest'
+        run: |
+          # Create a filtered artifacts directory with only final distribution files
+          mkdir -p artifacts-to-upload
+          
+          # Copy only final distribution files (not intermediate builds or debug files)
+          # Exclude: extension/, mas-arm64/, mac-arm64/ (intermediate builds)
+          # Include: *.dmg, *.zip, *.pkg, *.blockmap files
+          find dist -type f \( \
+            -name "*.dmg" -o \
+            -name "*.zip" -o \
+            -name "*.pkg" -o \
+            -name "*.blockmap" \
+          \) -not -path "*/extension/*" \
+            -not -path "*/mas-arm64/*" \
+            -not -path "*/mac-arm64/*" \
+            -not -name "builder-debug.yml" \
+            -not -name "builder-effective-config.yaml" \
+            -not -name "latest-mac.yml" \
+            -exec cp {} artifacts-to-upload/ \;
+          
+          # Show what we're uploading
+          echo "📦 Artifacts to upload (final distribution files only):"
+          ls -lh artifacts-to-upload/ || echo "⚠️  No artifacts found!"
+          
+          # Show size reduction
+          ORIGINAL_SIZE=$(du -sh dist 2>/dev/null | awk '{print $1}' || echo "unknown")
+          FILTERED_SIZE=$(du -sh artifacts-to-upload 2>/dev/null | awk '{print $1}' || echo "0")
+          echo "📊 Size: Original dist/=$ORIGINAL_SIZE, Filtered=$FILTERED_SIZE"
+          
+          # Fail if no artifacts found for macOS (Linux is OK to be empty)
+          if [ "${{ matrix.platform }}" = "mac" ] && [ ! "$(ls -A artifacts-to-upload)" ]; then
+            echo "❌ ERROR: No distribution files found for macOS build!"
+            echo "   Checked for: *.dmg, *.zip, *.pkg, *.blockmap"
+            exit 1
+          fi
+        shell: bash
+
       - name: Upload artifacts (macOS/Linux)
         if: matrix.os != 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}-build
-          path: dist/
+          path: artifacts-to-upload/
           retention-days: 30
           if-no-files-found: error
 

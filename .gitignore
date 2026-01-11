@@ -26,3 +26,5 @@ mas-certificates-combined-base64.txt
 *-certificates*.p12
 *-certificates*.txt
 Certificates*.p12
+*.md
+.vscode/settings.json
