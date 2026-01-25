@@ -797,6 +797,19 @@ function restore_config() {
       }
       update_hover_controls();
 
+      // restore resurface_existing_window (default: true)
+      var resurface_existing_window = true;
+      if (typeof config["resurface_existing_window"] !== 'undefined') {
+        resurface_existing_window = config["resurface_existing_window"];
+      }
+      if (document.getElementById("config_resurface_existing_window")) {
+        document.getElementById("config_resurface_existing_window").checked = resurface_existing_window;
+      }
+      // Sync with chrome.storage.local for background script access
+      if (window.chrome && window.chrome.runtime && window.chrome.runtime.id) {
+        chrome.storage.local.set({ resurfaceExistingWindow: resurface_existing_window });
+      }
+
       // restore always_on_top (desktop app only)
       if (window.electronAPI && window.electronAPI.isElectron) {
         window.electronAPI.getAlwaysOnTop().then((isAlwaysOnTop) => {
@@ -828,6 +841,15 @@ function restore_config() {
       document.getElementById("config_show_hover_controls").checked = false;
     }
     update_hover_controls();
+
+    // Default: resurface existing window ON
+    if (document.getElementById("config_resurface_existing_window")) {
+      document.getElementById("config_resurface_existing_window").checked = true;
+    }
+    // Sync with chrome.storage.local for background script access
+    if (window.chrome && window.chrome.runtime && window.chrome.runtime.id) {
+      chrome.storage.local.set({ resurfaceExistingWindow: true });
+    }
   }
 }
 
@@ -843,6 +865,11 @@ function save_config() {
         show_scoring = o.checked;
       } else if (o.name === "show_hover_controls") {
         show_hover_controls = o.checked;
+      } else if (o.name === "resurface_existing_window") {
+        // Sync with chrome.storage.local for background script access
+        if (window.chrome && window.chrome.runtime && window.chrome.runtime.id) {
+          chrome.storage.local.set({ resurfaceExistingWindow: o.checked });
+        }
       }
     } else if (o.type == "file") {
       // File input handled separately via handle_custom_audio function
