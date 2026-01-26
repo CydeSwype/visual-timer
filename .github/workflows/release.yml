@@ -321,7 +321,7 @@ jobs:
     permissions:
       contents: write
     # Only run release job on tag pushes or workflow_dispatch (not regular branch pushes)
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
 
     steps:
       - name: Checkout code
