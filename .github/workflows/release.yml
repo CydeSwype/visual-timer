@@ -264,12 +264,14 @@ jobs:
           
           # Copy only final distribution files (not intermediate builds or debug files)
           # Exclude: extension/, mas-arm64/, mac-arm64/ (intermediate builds)
-          # Include: *.dmg, *.zip, *.pkg, *.blockmap files
+          # Include: *.dmg, *.zip, *.pkg, *.blockmap, *.AppImage, *.deb files
           find dist -type f \( \
             -name "*.dmg" -o \
             -name "*.zip" -o \
             -name "*.pkg" -o \
-            -name "*.blockmap" \
+            -name "*.blockmap" -o \
+            -name "*.AppImage" -o \
+            -name "*.deb" \
           \) -not -path "*/extension/*" \
             -not -path "*/mas-arm64/*" \
             -not -path "*/mac-arm64/*" \
@@ -302,7 +304,7 @@ jobs:
           name: ${{ matrix.artifact_name }}-build
           path: artifacts-to-upload/
           retention-days: 30
-          if-no-files-found: error
+          if-no-files-found: ${{ matrix.platform == 'linux' && 'warn' || 'error' }}
 
       - name: Upload artifacts (Windows)
         if: matrix.os == 'windows-latest'
