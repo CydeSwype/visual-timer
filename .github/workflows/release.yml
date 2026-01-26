@@ -318,6 +318,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Only run release job on tag pushes or workflow_dispatch (not regular branch pushes)
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Checkout code
@@ -353,8 +355,11 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ github.event.inputs.tag }}"
-          else
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
+          else
+            echo "Error: Cannot determine tag name for non-tag push"
+            exit 1
           fi
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "Tag to use: ${TAG}"
