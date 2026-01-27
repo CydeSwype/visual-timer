@@ -118,7 +118,7 @@ exports.default = async function(context) {
               const helperPath = path.join(helpersPath, helper);
               if (fs.statSync(helperPath).isFile() && !helper.endsWith('.plist')) {
                 try {
-                  // Don't use --options runtime for MAS builds (that's for Developer ID only)
+                  // Don't use --options runtime for MAS builds
                   execSync(`codesign --force --sign "${identity}" --entitlements "${entitlementsInherit}" "${helperPath}"`, {
                     stdio: 'inherit'
                   });
@@ -172,10 +172,20 @@ exports.default = async function(context) {
             console.log('✅ Re-signed Electron Framework (bundle only)');
           }
           
+          // Check for provisioning profile to determine main app signing strategy
+          const hasProvisioningProfile = fs.existsSync(path.join(appBundlePath, 'Contents', 'embedded.provisionprofile'));
+          
           // Sign main app bundle last (no --options runtime for MAS builds)
-          execSync(`codesign --force --sign "${identity}" --entitlements "${entitlements}" "${appBundlePath}"`, {
-            stdio: 'inherit'
-          });
+          if (hasProvisioningProfile) {
+            console.log('Provisioning profile found. Signing WITHOUT --entitlements flag to avoid team-identifier error...');
+            execSync(`codesign --force --sign "${identity}" "${appBundlePath}"`, {
+              stdio: 'inherit'
+            });
+          } else {
+            execSync(`codesign --force --sign "${identity}" --entitlements "${entitlements}" "${appBundlePath}"`, {
+              stdio: 'inherit'
+            });
+          }
           console.log('✅ App bundle re-signed successfully');
         } catch (error) {
           console.error('❌ Failed to re-sign app bundle:', error.message);

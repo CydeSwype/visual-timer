@@ -6,6 +6,10 @@
   <true/>
   <key>com.apple.security.inherit</key>
   <true/>
+  <key>com.apple.security.application-groups</key>
+  <array>
+    <string>group.4MSL3T2696.com.iandmiller.visualtimer</string>
+  </array>
   <key>com.apple.security.cs.allow-jit</key>
   <true/>
   <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
