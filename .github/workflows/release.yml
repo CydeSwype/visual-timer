@@ -19,12 +19,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [macos-latest, windows-2022, ubuntu-latest]
         include:
           - os: macos-latest
             platform: mac
             artifact_name: mac
-          - os: windows-latest
+          - os: windows-2022
             platform: win
             artifact_name: win
           - os: ubuntu-latest
@@ -42,12 +42,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        if: matrix.os != 'windows-latest'
+        if: matrix.platform != 'win'
         run: npm ci
         timeout-minutes: 10
 
       - name: Install dependencies (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.platform == 'win'
         run: npm ci --no-audit --no-fund
         timeout-minutes: 30
         shell: pwsh
@@ -233,7 +233,7 @@ jobs:
           # Do NOT set APPLE_API_KEY* variables - they trigger notarization which MAS apps don't need
           # electron-builder should auto-discover the installer certificate from the P12
 
-      - name: Build for linux (Linux)
+      - name: Build for Linux
         if: matrix.platform == 'linux'
         timeout-minutes: 30
         run: |
@@ -245,11 +245,11 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           CI: true
 
-      - name: Build for ${{ matrix.platform }} (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Build for Windows
+        if: matrix.platform == 'win'
         timeout-minutes: 45
         continue-on-error: true
-        run: npm run build:desktop:${{ matrix.platform }}
+        run: npm run build:desktop:win
         shell: pwsh
         env:
           # Disable electron-builder auto-publish and code signing
@@ -257,7 +257,7 @@ jobs:
           CI: true
 
       - name: Prepare artifacts for upload
-        if: matrix.os != 'windows-latest'
+        if: matrix.platform != 'win'
         run: |
           # Create a filtered artifacts directory with only final distribution files
           mkdir -p artifacts-to-upload
@@ -298,7 +298,7 @@ jobs:
         shell: bash
 
       - name: Upload artifacts (macOS/Linux)
-        if: matrix.os != 'windows-latest'
+        if: matrix.platform != 'win'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}-build
@@ -307,7 +307,7 @@ jobs:
           if-no-files-found: ${{ matrix.platform == 'linux' && 'warn' || 'error' }}
 
       - name: Upload artifacts (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.platform == 'win'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}-build
