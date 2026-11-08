@@ -28,3 +28,7 @@ mas-certificates-combined-base64.txt
 Certificates*.p12
 *.md
 .vscode/settings.json
+build/*.provisionprofile
+*.p12
+*.p8
+*.certSigningRequest

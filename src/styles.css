@@ -305,6 +305,13 @@ svg {
   font-size: min(35vw, 35vh);
 }
 
+/* When a task description is showing, give the number the top ~74% of the window
+   and the description the bottom ~26%, so both always fit at any window size. */
+#timer:has(#timer-description:not(:empty)) .timer-value-container {
+  height: 74%;
+  font-size: min(30vw, 38vh);
+}
+
 #timer {
   position: relative;
   z-index: 1;
@@ -312,10 +319,24 @@ svg {
 
 #timer-description {
   position: absolute;
-  font-size: min(10vw, 10vh);
-  top: 75%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 26%;
+  box-sizing: border-box;
+  padding: 0 4%;
+  overflow: hidden;
+  line-height: 1.15;
+  font-size: min(8vw, 10vh);
   text-align: center;
-  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+/* In very short windows, drop the scoring bar so it never covers the timer */
+@media (max-height: 260px) {
+  #gamification-panel {
+    display: none;
+  }
 }
 
 #toast {

@@ -21,8 +21,8 @@
     "task-management"
   ],
   "author": {
-    "name": "Visual Timer",
-    "email": "visualtimer@example.com"
+    "name": "Ian Miller",
+    "email": "ian@yawmp.com"
   },
   "license": "ISC",
   "devDependencies": {
@@ -32,7 +32,7 @@
   },
   "build": {
     "appId": "com.iandmiller.visualtimer",
-    "productName": "Visual Timer",
+    "productName": "KeyTimer",
     "directories": {
       "output": "dist"
     },
@@ -43,13 +43,16 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "icon": "desktop/assets/icon-1024.png",
+      "icon": "desktop/assets/icon.icns",
       "target": [
         "dmg",
         "zip"
       ],
       "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "win": {
       "target": [
@@ -78,7 +81,10 @@
       "minimumSystemVersion": "12.0",
       "target": [
         "pkg"
-      ]
-    }
+      ],
+      "provisioningProfile": "build/embedded.provisionprofile"
+    },
+    "copyright": "Copyright \u00a9 2026 Ian Miller",
+    "buildVersion": "2"
   }
 }

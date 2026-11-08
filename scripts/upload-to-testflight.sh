@@ -3,7 +3,7 @@
 # Script to help upload MAS build to TestFlight
 # This opens Transporter with your PKG file ready to upload
 
-PKG_PATH="dist/mas-universal/Visual Timer-1.6.2-universal.pkg"
+PKG_PATH="dist/mas-universal/KeyTimer-1.6.2-universal.pkg"
 
 if [ ! -f "$PKG_PATH" ]; then
     echo "❌ Error: PKG file not found at $PKG_PATH"
