@@ -137,6 +137,10 @@ function createWindow() {
     show: false // Don't show until ready to prevent flash
   });
 
+  // Keep the window title as the app name (the shared page title is 'Task Timer')
+  mainWindow.setTitle('KeyTimer');
+  mainWindow.on('page-title-updated', (e) => e.preventDefault());
+
   // Load the index.html file
   mainWindow.loadFile(path.join(__dirname, '../src/index.html'));
 
@@ -175,10 +179,7 @@ function createWindow() {
 }
 
 // Set app name for proper display in task switcher/dock
-app.setName('Visual Timer');
-
-// Set app name for proper display in task switcher/dock
-app.setName('Visual Timer');
+app.setName('KeyTimer');
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {

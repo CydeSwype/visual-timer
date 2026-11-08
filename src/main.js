@@ -343,28 +343,24 @@ function format_time(seconds) {
   return final_time;
 }
 
-function fitTextToContainer(elementId, minFontSize = 12, maxFontSize = 48) {
+function fitTextToContainer(elementId, minFontSize = 9) {
   const el = document.getElementById(elementId);
   if (!el) return;
-  const parent = el.parentElement;
-  if (!parent) return;
 
-  let fontSize = maxFontSize;
+  // Start from the largest size the window allows, then shrink until the text
+  // fits inside the description area (which is a fixed share of the window).
+  let fontSize = Math.max(
+    minFontSize,
+    Math.floor(Math.min(window.innerHeight * 0.1, window.innerWidth * 0.08))
+  );
   el.style.fontSize = fontSize + "px";
-  el.style.whiteSpace = "normal";
-  el.style.height = "auto";
-
-  // Estimate line height as 1.2em
-  let maxHeight = 2 * fontSize * 1.2;
 
   while (
-    (el.scrollWidth > parent.clientWidth || el.offsetHeight > maxHeight) &&
+    (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1) &&
     fontSize > minFontSize
   ) {
     fontSize -= 1;
     el.style.fontSize = fontSize + "px";
-    maxHeight = 2 * fontSize * 1.2;
-    el.style.height = "auto";
   }
 }
 
